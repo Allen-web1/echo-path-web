@@ -3606,3 +3606,724 @@ button {
     display: none !important;
 }
 
+/* =========================================
+   SETTINGS - INTERACTIVE PANELS
+   앱 카테고리 / 개인정보 및 데이터
+========================================= */
+
+#settingsPage .settings-action-card {
+    width: 100%;
+
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) 24px;
+    gap: 13px;
+    align-items: center;
+
+    padding: 18px 17px;
+    margin-bottom: 12px;
+
+    border: 1px solid #e8ecf3;
+    border-radius: 18px;
+
+    background: #ffffff;
+    color: #172033;
+
+    text-align: left;
+    cursor: pointer;
+
+    transition:
+        border-color 0.18s ease,
+        box-shadow 0.18s ease,
+        transform 0.18s ease;
+}
+
+#settingsPage .settings-action-card:hover {
+    border-color: #cfd9f5;
+
+    box-shadow:
+        0 9px 24px rgba(23, 32, 51, 0.07);
+}
+
+#settingsPage .settings-action-card:active {
+    transform: scale(0.99);
+}
+
+#settingsPage .settings-action-card[aria-expanded="true"] {
+    border-color: #b9c8ff;
+    background: #fbfcff;
+}
+
+.settings-action-icon {
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 13px;
+
+    background: #eef2ff;
+    color: #3867f4;
+
+    font-size: 18px;
+    font-weight: 900;
+}
+
+.settings-action-copy {
+    min-width: 0;
+}
+
+.settings-action-copy strong {
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: #172033;
+
+    font-size: 15px;
+}
+
+.settings-action-copy > span {
+    display: block;
+
+    color: #718096;
+
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+.settings-action-arrow {
+    color: #98a4b7;
+
+    font-size: 26px;
+    line-height: 1;
+
+    transition: transform 0.18s ease;
+}
+
+.settings-action-card[aria-expanded="true"]
+.settings-action-arrow {
+    transform: rotate(90deg);
+}
+
+.settings-detail-panel {
+    padding: 18px;
+
+    margin:
+        -2px 0
+        14px;
+
+    border: 1px solid #e3e9f3;
+    border-radius: 18px;
+
+    background: #f9fbff;
+}
+
+.settings-detail-panel[hidden] {
+    display: none !important;
+}
+
+.settings-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    gap: 12px;
+
+    margin-bottom: 8px;
+}
+
+.settings-detail-header h3 {
+    margin: 0;
+
+    color: #172033;
+
+    font-size: 17px;
+}
+
+.settings-status-chip {
+    flex-shrink: 0;
+
+    padding: 6px 9px;
+
+    border-radius: 999px;
+
+    background: #edf2ff;
+    color: #3867f4;
+
+    font-size: 9px;
+    font-weight: 900;
+}
+
+.settings-status-chip-safe {
+    background: #edf8f2;
+    color: #2d8a5b;
+}
+
+.settings-detail-description {
+    margin: 0 0 13px;
+
+    color: #65738a;
+
+    font-size: 12px;
+    line-height: 1.65;
+}
+
+.settings-info-note {
+    padding: 12px 13px;
+
+    margin-bottom: 14px;
+
+    border: 1px solid #dce4ff;
+    border-radius: 12px;
+
+    background: #f1f4ff;
+    color: #526074;
+
+    font-size: 11px;
+    line-height: 1.55;
+}
+
+.settings-search {
+    display: block;
+
+    margin-bottom: 12px;
+}
+
+.settings-search > span {
+    display: block;
+
+    margin-bottom: 7px;
+
+    color: #526074;
+
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.settings-search input {
+    width: 100%;
+    min-height: 44px;
+
+    padding: 0 12px;
+
+    border: 1px solid #dfe5ee;
+    border-radius: 12px;
+
+    outline: none;
+
+    background: #ffffff;
+    color: #172033;
+
+    font: inherit;
+    font-size: 13px;
+}
+
+.settings-search input:focus {
+    border-color: #7792f8;
+
+    box-shadow:
+        0 0 0 3px rgba(56, 103, 244, 0.09);
+}
+
+.category-app-list {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+
+    max-height: 430px;
+
+    padding-right: 2px;
+
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.category-app-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 122px;
+    gap: 10px;
+    align-items: center;
+
+    padding: 12px;
+
+    border: 1px solid #e8ecf3;
+    border-radius: 14px;
+
+    background: #ffffff;
+}
+
+.category-app-copy {
+    min-width: 0;
+}
+
+.category-app-copy strong {
+    display: block;
+
+    margin-bottom: 3px;
+
+    color: #172033;
+
+    font-size: 13px;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.category-app-copy span {
+    display: block;
+
+    color: #929daf;
+
+    font-size: 9px;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.category-app-copy small {
+    display: block;
+
+    margin-top: 5px;
+
+    color: #718096;
+
+    font-size: 10px;
+}
+
+.category-select {
+    width: 100%;
+    min-height: 40px;
+
+    padding: 0 9px;
+
+    border: 1px solid #dfe5ee;
+    border-radius: 10px;
+
+    outline: none;
+
+    background: #f9fafc;
+    color: #344054;
+
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.category-select:focus {
+    border-color: #7792f8;
+}
+
+.settings-empty-message {
+    margin: 0;
+
+    padding: 18px 10px;
+
+    color: #8a94a6;
+
+    font-size: 12px;
+    line-height: 1.6;
+    text-align: center;
+}
+
+.settings-operation-status {
+    min-height: 18px;
+
+    margin: 11px 0 0;
+
+    color: #718096;
+
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.settings-operation-status[data-state="success"] {
+    color: #278257;
+}
+
+.settings-operation-status[data-state="error"] {
+    color: #d6535b;
+}
+
+.settings-button-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+
+    margin-top: 12px;
+}
+
+.settings-primary-button,
+.settings-secondary-button {
+    min-height: 44px;
+
+    padding: 10px 12px;
+
+    border-radius: 12px;
+
+    font: inherit;
+    font-size: 11px;
+    font-weight: 850;
+
+    cursor: pointer;
+}
+
+.settings-primary-button {
+    border: 0;
+
+    background: #3867f4;
+    color: #ffffff;
+
+    box-shadow:
+        0 7px 17px rgba(56, 103, 244, 0.18);
+}
+
+.settings-secondary-button {
+    border: 1px solid #dfe5ee;
+
+    background: #ffffff;
+    color: #526074;
+}
+
+.settings-primary-button:disabled,
+.settings-secondary-button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.privacy-data-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+
+    margin-top: 14px;
+}
+
+.privacy-data-grid article {
+    padding: 13px;
+
+    border: 1px solid #e8ecf3;
+    border-radius: 14px;
+
+    background: #ffffff;
+}
+
+.privacy-data-grid article > span {
+    display: block;
+
+    margin-bottom: 6px;
+
+    color: #3867f4;
+
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.3px;
+}
+
+.privacy-data-grid strong {
+    display: block;
+
+    margin-bottom: 6px;
+
+    color: #172033;
+
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.privacy-data-grid p {
+    margin: 0;
+
+    color: #718096;
+
+    font-size: 10px;
+    line-height: 1.6;
+}
+
+.privacy-export-box {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+
+    padding: 14px;
+
+    margin-top: 12px;
+
+    border-radius: 14px;
+
+    background: #172033;
+    color: #ffffff;
+}
+
+.privacy-export-box strong {
+    display: block;
+
+    margin-bottom: 5px;
+
+    font-size: 12px;
+}
+
+.privacy-export-box p {
+    margin: 0;
+
+    color: #b7c1d0;
+
+    font-size: 10px;
+    line-height: 1.55;
+}
+
+.privacy-export-box .settings-primary-button {
+    min-width: 104px;
+
+    background: #ffffff;
+    color: #172033;
+
+    box-shadow: none;
+}
+
+#settingsPage .account-email {
+    margin-top: 8px;
+
+    color: #3867f4;
+
+    font-weight: 800;
+    overflow-wrap: anywhere;
+}
+
+#settingsPage .logout-button {
+    min-height: 42px;
+
+    margin-top: 14px;
+    padding: 9px 14px;
+
+    border: 1px solid #e2e7ef;
+    border-radius: 11px;
+
+    background: #f7f8fb;
+    color: #526074;
+
+    font: inherit;
+    font-size: 11px;
+    font-weight: 800;
+
+    cursor: pointer;
+}
+
+@media (max-width: 400px) {
+    .settings-detail-panel {
+        padding: 15px;
+    }
+
+    .category-app-item {
+        grid-template-columns: 1fr;
+    }
+
+    .category-select {
+        min-height: 42px;
+    }
+
+    .privacy-data-grid,
+    .settings-button-row {
+        grid-template-columns: 1fr;
+    }
+
+    .privacy-export-box {
+        grid-template-columns: 1fr;
+    }
+
+    .privacy-export-box .settings-primary-button {
+        width: 100%;
+    }
+}
+
+/* =========================================
+   SETTINGS SUBPAGES
+   앱 카테고리 / 개인정보 및 데이터 별도 페이지
+========================================= */
+
+.settings-subpage-topbar {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 12px;
+    align-items: center;
+
+    padding: 12px 0 20px;
+}
+
+.settings-subpage-topbar h2 {
+    margin: 0;
+
+    color: #172033;
+
+    font-size: 25px;
+    line-height: 1.25;
+}
+
+.settings-back-button {
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid #e3e9f3;
+    border-radius: 13px;
+
+    background: #ffffff;
+    color: #172033;
+
+    font-size: 30px;
+    line-height: 1;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 4px 12px rgba(23, 32, 51, 0.05);
+}
+
+.settings-back-button:hover {
+    border-color: #cfd9f5;
+    background: #f8faff;
+}
+
+.settings-detail-page {
+    margin: 0 0 18px;
+}
+
+#categorySettingsPage,
+#privacySettingsPage {
+    padding-bottom: 18px;
+}
+
+@media (max-width: 380px) {
+    .settings-subpage-topbar {
+        grid-template-columns: 38px minmax(0, 1fr);
+        gap: 10px;
+    }
+
+    .settings-back-button {
+        width: 38px;
+        height: 38px;
+    }
+
+    .settings-subpage-topbar h2 {
+        font-size: 22px;
+    }
+}
+
+/* =========================================
+   SETTINGS PRIVACY NOTE
+========================================= */
+
+.settings-privacy-note {
+    margin: 14px 4px 0;
+
+    color: #8a94a6;
+
+    font-size: 10px;
+    line-height: 1.6;
+}
+
+/* HOME 디지털 활동 공간 - 실제 데이터 없음 */
+.map-preview-empty {
+    position: absolute;
+    inset: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    margin: 0;
+    padding: 24px;
+
+    color: rgba(255, 255, 255, 0.62);
+
+    font-size: 12px;
+    line-height: 1.6;
+    text-align: center;
+}
+
+/* =========================================
+   HOME DIGITAL MAP - 균등 배치
+   막대 개수와 관계없이 가로 간격을 일정하게 유지
+========================================= */
+
+.map-placeholder {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-evenly;
+    gap: 14px;
+
+    padding:
+        0
+        18px
+        28px;
+}
+
+.map-placeholder::before {
+    z-index: 0;
+}
+
+.map-placeholder .building {
+    position: relative;
+    z-index: 1;
+
+    flex:
+        1
+        1
+        0;
+
+    width: auto;
+    max-width: 72px;
+    min-width: 42px;
+
+    left: auto;
+    right: auto;
+    bottom: auto;
+
+    margin: 0;
+}
+
+/*
+    기존 클래스의 위치/폭 지정은 무효화하고,
+    색상 역할만 그대로 사용합니다.
+*/
+.map-placeholder .building-study,
+.map-placeholder .building-media,
+.map-placeholder .building-social,
+.map-placeholder .building-shopping {
+    left: auto;
+    right: auto;
+    bottom: auto;
+
+    width: auto;
+}
+
+/* 1~3개만 표시될 때도 지나치게 넓어지지 않도록 제한 */
+.map-placeholder .building:only-child {
+    flex: 0 1 72px;
+}
+
+@media (max-width: 380px) {
+    .map-placeholder {
+        gap: 10px;
+
+        padding:
+            0
+            14px
+            28px;
+    }
+
+    .map-placeholder .building {
+        min-width: 36px;
+        max-width: 64px;
+
+        font-size: 11px;
+    }
+}
+
