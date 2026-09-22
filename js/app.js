@@ -12,6 +12,11 @@ import {
 } from "./realtime.js";
 
 import {
+    supabase
+} from "./supabase.js";
+
+
+import {
     loadEchoPathUsageData
 } from "./supabase-data.js";
 
@@ -300,6 +305,12 @@ function openPage(
     }
 
 
+    const navPageId =
+        pageId === "categorySettingsPage"
+            ? "settingsPage"
+            : pageId;
+
+
     navButtons.forEach(
         (button) => {
 
@@ -310,7 +321,7 @@ function openPage(
 
             if (
                 button.dataset.pageTarget
-                === pageId
+                === navPageId
             ) {
 
                 button.classList.add(
@@ -541,6 +552,181 @@ function formatHours(
 
 
 /* =========================================
+   HOME - 디지털 활동 공간 실데이터 반영
+========================================= */
+
+function renderHomeDigitalActivitySpace() {
+
+    /*
+        홈과 DDI 화면에 동일한 .map-placeholder가 있으므로
+        첫 번째 요소만 갱신하지 않고 모든 디지털 활동 공간을
+        같은 실제 데이터로 다시 그립니다.
+    */
+    const containers =
+        document.querySelectorAll(
+            ".map-placeholder"
+        );
+
+
+    if (containers.length === 0) {
+        return;
+    }
+
+
+    const categories =
+        usageData
+            ?.periodUsage
+            ?.daily
+            ?.categories
+        ?? {};
+
+
+    const entries =
+        Object.entries(
+            categories
+        )
+        .map(
+            ([category, minutes]) => ({
+                category,
+                minutes:
+                    Number(
+                        minutes
+                        ?? 0
+                    )
+            })
+        )
+        .filter(
+            (item) =>
+                item.minutes > 0
+        )
+        .sort(
+            (a, b) =>
+                b.minutes
+                -
+                a.minutes
+        )
+        .slice(
+            0,
+            4
+        );
+
+
+    const positionClasses = [
+        "building-study",
+        "building-media",
+        "building-social",
+        "building-shopping"
+    ];
+
+
+    const maxMinutes =
+        entries.length > 0
+            ?
+                Math.max(
+                    ...entries.map(
+                        (item) =>
+                            item.minutes
+                    ),
+                    1
+                )
+            :
+                1;
+
+
+    containers.forEach(
+        (container) => {
+
+            container.innerHTML =
+                "";
+
+
+            if (entries.length === 0) {
+
+                const empty =
+                    document.createElement(
+                        "p"
+                    );
+
+                empty.className =
+                    "map-preview-empty";
+
+                empty.textContent =
+                    "오늘 수집된 앱 활동 데이터가 아직 없습니다.";
+
+
+                container.appendChild(
+                    empty
+                );
+
+                return;
+            }
+
+
+            entries.forEach(
+                (item, index) => {
+
+                    const building =
+                        document.createElement(
+                            "div"
+                        );
+
+                    building.className =
+                        `building ${positionClasses[index]}`;
+
+
+                    const height =
+                        Math.round(
+                            54
+                            +
+                            (
+                                item.minutes
+                                /
+                                maxMinutes
+                            )
+                            *
+                            116
+                        );
+
+
+                    building.style.height =
+                        `${Math.min(
+                            170,
+                            Math.max(
+                                54,
+                                height
+                            )
+                        )}px`;
+
+
+                    building.title =
+                        `${item.category}: ${Math.round(item.minutes)}분`;
+
+
+                    const label =
+                        document.createElement(
+                            "span"
+                        );
+
+                    label.textContent =
+                        item.category;
+
+
+                    building.appendChild(
+                        label
+                    );
+
+
+                    container.appendChild(
+                        building
+                    );
+                }
+            );
+
+        }
+    );
+}
+
+/* =========================================
    9. 홈 화면 표시
 ========================================= */
 
@@ -560,6 +746,9 @@ if (ddiValueElement) {
         `${ddiResult.ddi} km`;
 
 }
+
+
+renderHomeDigitalActivitySpace();
 
 
 /* =========================================
@@ -3408,6 +3597,9 @@ function renderRealtimeCoreUi() {
     }
 
 
+    renderHomeDigitalActivitySpace();
+
+
     if (mainDdiValueElement) {
         mainDdiValueElement.textContent =
             `${ddiResult.ddi} km`;
@@ -3636,3 +3828,865 @@ await startRealtimeAfterUiReady();
 /* =========================================
    END OF ECHO PATH APP
 ========================================= */
+
+
+/* =========================================
+   22. SETTINGS - 앱 카테고리 설정
+   별도 settings.js를 사용하지 않고
+   현재 정상 동작 중인 app.js 내부에서 직접 처리합니다.
+========================================= */
+
+const categorySettingsButton =
+    document.querySelector(
+        "#openCategorySettings"
+    );
+
+const categorySearchInput =
+    document.querySelector(
+        "#categorySearchInput"
+    );
+
+const categoryAppList =
+    document.querySelector(
+        "#categoryAppList"
+    );
+
+const categorySettingsStatus =
+    document.querySelector(
+        "#categorySettingsStatus"
+    );
+
+const saveCategorySettingsButton =
+    document.querySelector(
+        "#saveCategorySettings"
+    );
+
+const resetCategorySettingsButton =
+    document.querySelector(
+        "#resetCategorySettings"
+    );
+
+
+const SETTINGS_CATEGORY_OPTIONS = [
+    "AI·정보",
+    "학습",
+    "정보·검색",
+    "생산성",
+    "소통",
+    "지도·이동",
+    "생활·도구",
+    "SNS",
+    "미디어",
+    "쇼핑",
+    "게임",
+    "기타"
+];
+
+
+let settingsCategoryApps = [];
+let settingsCategoryDraft = {};
+let settingsCategoryUser = null;
+
+
+function setCategorySettingsStatus(
+    message,
+    state = ""
+) {
+
+    if (!categorySettingsStatus) {
+        return;
+    }
+
+
+    categorySettingsStatus.textContent =
+        message ?? "";
+
+
+    if (state) {
+        categorySettingsStatus.dataset.state =
+            state;
+    } else {
+        delete categorySettingsStatus.dataset.state;
+    }
+}
+
+
+function getSettingsCategoryOverrides(
+    user
+) {
+
+    const overrides =
+        user?.user_metadata
+            ?.app_category_overrides;
+
+
+    if (
+        !overrides
+        ||
+        typeof overrides !== "object"
+        ||
+        Array.isArray(overrides)
+    ) {
+        return {};
+    }
+
+
+    return {
+        ...overrides
+    };
+}
+
+
+function formatSettingsUsageMinutes(
+    minutes
+) {
+
+    const safeMinutes =
+        Math.max(
+            0,
+            Math.round(
+                Number(
+                    minutes
+                    ?? 0
+                )
+            )
+        );
+
+
+    const hours =
+        Math.floor(
+            safeMinutes / 60
+        );
+
+    const remain =
+        safeMinutes % 60;
+
+
+    if (hours > 0) {
+        return `${hours}시간 ${remain}분`;
+    }
+
+
+    return `${remain}분`;
+}
+
+
+function renderSettingsCategoryApps() {
+
+    if (!categoryAppList) {
+        return;
+    }
+
+
+    const keyword =
+        String(
+            categorySearchInput
+                ?.value
+            ?? ""
+        )
+        .trim()
+        .toLowerCase();
+
+
+    const filtered =
+        settingsCategoryApps
+            .filter(
+                (app) => {
+
+                    if (!keyword) {
+                        return true;
+                    }
+
+
+                    return (
+                        String(
+                            app.name
+                            ?? ""
+                        )
+                        .toLowerCase()
+                        .includes(
+                            keyword
+                        )
+                        ||
+                        String(
+                            app.packageName
+                            ?? ""
+                        )
+                        .toLowerCase()
+                        .includes(
+                            keyword
+                        )
+                    );
+                }
+            );
+
+
+    categoryAppList.innerHTML =
+        "";
+
+
+    if (filtered.length === 0) {
+
+        const empty =
+            document.createElement(
+                "p"
+            );
+
+        empty.className =
+            "settings-empty-message";
+
+        empty.textContent =
+            settingsCategoryApps.length === 0
+                ? "오늘 수집된 앱 사용 데이터가 없습니다."
+                : "검색 결과가 없습니다.";
+
+
+        categoryAppList.appendChild(
+            empty
+        );
+
+        return;
+    }
+
+
+    filtered.forEach(
+        (app) => {
+
+            const item =
+                document.createElement(
+                    "div"
+                );
+
+            item.className =
+                "category-app-item";
+
+
+            const copy =
+                document.createElement(
+                    "div"
+                );
+
+            copy.className =
+                "category-app-copy";
+
+
+            const name =
+                document.createElement(
+                    "strong"
+                );
+
+            name.textContent =
+                app.name
+                ||
+                app.packageName
+                ||
+                "알 수 없는 앱";
+
+
+            const packageName =
+                document.createElement(
+                    "span"
+                );
+
+            packageName.textContent =
+                app.packageName
+                || "";
+
+
+            const usage =
+                document.createElement(
+                    "small"
+                );
+
+            usage.textContent =
+                `오늘 ${formatSettingsUsageMinutes(app.usageMinutes)} 사용`;
+
+
+            copy.append(
+                name,
+                packageName,
+                usage
+            );
+
+
+            const select =
+                document.createElement(
+                    "select"
+                );
+
+            select.className =
+                "category-select";
+
+            select.setAttribute(
+                "aria-label",
+                `${name.textContent} 카테고리`
+            );
+
+
+            const sourceCategory =
+                app.category
+                || "기타";
+
+
+            const selectedCategory =
+                settingsCategoryDraft[
+                    app.packageName
+                ]
+                ||
+                sourceCategory;
+
+
+            Array.from(
+                new Set([
+                    ...SETTINGS_CATEGORY_OPTIONS,
+                    sourceCategory,
+                    selectedCategory
+                ].filter(Boolean))
+            )
+            .forEach(
+                (category) => {
+
+                    const option =
+                        document.createElement(
+                            "option"
+                        );
+
+                    option.value =
+                        category;
+
+                    option.textContent =
+                        category;
+
+                    option.selected =
+                        category === selectedCategory;
+
+
+                    select.appendChild(
+                        option
+                    );
+                }
+            );
+
+
+            select.addEventListener(
+                "change",
+                () => {
+
+                    const nextCategory =
+                        String(
+                            select.value
+                            ?? ""
+                        ).trim();
+
+
+                    if (
+                        !nextCategory
+                        ||
+                        nextCategory === sourceCategory
+                    ) {
+
+                        delete settingsCategoryDraft[
+                            app.packageName
+                        ];
+
+                    } else {
+
+                        settingsCategoryDraft[
+                            app.packageName
+                        ] =
+                            nextCategory;
+                    }
+                }
+            );
+
+
+            item.append(
+                copy,
+                select
+            );
+
+
+            categoryAppList.appendChild(
+                item
+            );
+        }
+    );
+}
+
+
+async function loadSettingsCategoryApps() {
+
+    if (!categoryAppList) {
+        return;
+    }
+
+
+    categoryAppList.innerHTML =
+        '<p class="settings-empty-message">앱 목록을 준비하는 중입니다.</p>';
+
+
+    setCategorySettingsStatus(
+        "현재 화면의 실제 앱 데이터를 확인하는 중..."
+    );
+
+
+    /*
+        핵심:
+        별도 Supabase 재조회 없이
+        현재 홈/통계/DDI가 사용하고 있는 usageData.apps를
+        그대로 사용합니다.
+    */
+    settingsCategoryApps =
+        Array.isArray(
+            usageData?.apps
+        )
+            ? usageData.apps
+                .map(
+                    (app) => ({
+                        packageName:
+                            String(
+                                app?.packageName
+                                ?? ""
+                            ).trim(),
+
+                        name:
+                            String(
+                                app?.name
+                                ?? app?.packageName
+                                ?? "알 수 없는 앱"
+                            ),
+
+                        category:
+                            String(
+                                app?.category
+                                ?? "기타"
+                            ),
+
+                        usageMinutes:
+                            Number(
+                                app?.usageMinutes
+                                ?? 0
+                            )
+                    })
+                )
+                .filter(
+                    (app) =>
+                        Boolean(
+                            app.packageName
+                        )
+                )
+                .sort(
+                    (
+                        a,
+                        b
+                    ) =>
+                        b.usageMinutes
+                        -
+                        a.usageMinutes
+                )
+            : [];
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await supabase
+                .auth
+                .getSession();
+
+
+        if (error) {
+            throw error;
+        }
+
+
+        settingsCategoryUser =
+            data?.session?.user
+            ?? null;
+
+
+        settingsCategoryDraft =
+            getSettingsCategoryOverrides(
+                settingsCategoryUser
+            );
+
+    } catch (error) {
+
+        console.warn(
+            "카테고리 사용자 설정 확인 실패:",
+            error
+        );
+
+
+        settingsCategoryUser =
+            null;
+
+        settingsCategoryDraft =
+            {};
+    }
+
+
+    renderSettingsCategoryApps();
+
+
+    setCategorySettingsStatus(
+        settingsCategoryApps.length > 0
+            ? `${settingsCategoryApps.length}개 앱을 불러왔습니다.`
+            : "오늘 수집된 앱 사용 데이터가 없습니다.",
+        settingsCategoryApps.length > 0
+            ? "success"
+            : ""
+    );
+}
+
+
+async function saveSettingsCategories() {
+
+    if (!settingsCategoryUser) {
+
+        const {
+            data,
+            error
+        } =
+            await supabase
+                .auth
+                .getSession();
+
+
+        if (error) {
+            throw error;
+        }
+
+
+        settingsCategoryUser =
+            data?.session?.user
+            ?? null;
+    }
+
+
+    if (!settingsCategoryUser) {
+
+        setCategorySettingsStatus(
+            "로그인 정보를 확인할 수 없습니다.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    if (saveCategorySettingsButton) {
+        saveCategorySettingsButton.disabled =
+            true;
+    }
+
+
+    setCategorySettingsStatus(
+        "카테고리 설정을 저장하는 중..."
+    );
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await supabase
+                .auth
+                .updateUser({
+                    data: {
+                        ...(
+                            settingsCategoryUser
+                                .user_metadata
+                            ?? {}
+                        ),
+
+                        app_category_overrides: {
+                            ...settingsCategoryDraft
+                        }
+                    }
+                });
+
+
+        if (error) {
+            throw error;
+        }
+
+
+        settingsCategoryUser =
+            data?.user
+            ?? settingsCategoryUser;
+
+
+        setCategorySettingsStatus(
+            "저장되었습니다. 변경한 카테고리를 반영합니다.",
+            "success"
+        );
+
+
+        window.setTimeout(
+            () => {
+                window.location.reload();
+            },
+            650
+        );
+
+    } catch (error) {
+
+        console.error(
+            "앱 카테고리 저장 실패:",
+            error
+        );
+
+
+        setCategorySettingsStatus(
+            "저장하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+            "error"
+        );
+
+    } finally {
+
+        if (saveCategorySettingsButton) {
+            saveCategorySettingsButton.disabled =
+                false;
+        }
+    }
+}
+
+
+async function resetSettingsCategories() {
+
+    const confirmed =
+        window.confirm(
+            "직접 설정한 앱 카테고리를 모두 초기화할까요?\n\n원본 사용 데이터와 DDI 값은 삭제되지 않습니다."
+        );
+
+
+    if (!confirmed) {
+        return;
+    }
+
+
+    const {
+        data: sessionData,
+        error: sessionError
+    } =
+        await supabase
+            .auth
+            .getSession();
+
+
+    if (sessionError) {
+
+        console.error(
+            "카테고리 초기화 로그인 확인 실패:",
+            sessionError
+        );
+
+        setCategorySettingsStatus(
+            "로그인 정보를 확인할 수 없습니다.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    const user =
+        sessionData?.session?.user
+        ?? null;
+
+
+    if (!user) {
+
+        setCategorySettingsStatus(
+            "로그인 정보를 확인할 수 없습니다.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    if (resetCategorySettingsButton) {
+        resetCategorySettingsButton.disabled =
+            true;
+    }
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await supabase
+                .auth
+                .updateUser({
+                    data: {
+                        ...(
+                            user.user_metadata
+                            ?? {}
+                        ),
+
+                        app_category_overrides:
+                            {}
+                    }
+                });
+
+
+        if (error) {
+            throw error;
+        }
+
+
+        settingsCategoryUser =
+            data?.user
+            ?? user;
+
+        settingsCategoryDraft =
+            {};
+
+
+        setCategorySettingsStatus(
+            "사용자 분류를 초기화했습니다.",
+            "success"
+        );
+
+
+        window.setTimeout(
+            () => {
+                window.location.reload();
+            },
+            650
+        );
+
+    } catch (error) {
+
+        console.error(
+            "앱 카테고리 초기화 실패:",
+            error
+        );
+
+
+        setCategorySettingsStatus(
+            "초기화하지 못했습니다.",
+            "error"
+        );
+
+    } finally {
+
+        if (resetCategorySettingsButton) {
+            resetCategorySettingsButton.disabled =
+                false;
+        }
+    }
+}
+
+
+if (categorySettingsButton) {
+
+    categorySettingsButton
+        .addEventListener(
+            "click",
+            () => {
+
+                loadSettingsCategoryApps()
+                    .catch(
+                        (error) => {
+
+                            console.error(
+                                "앱 카테고리 화면 생성 실패:",
+                                error
+                            );
+
+
+                            if (categoryAppList) {
+                                categoryAppList.innerHTML =
+                                    '<p class="settings-empty-message">앱 목록을 표시하지 못했습니다.</p>';
+                            }
+
+
+                            setCategorySettingsStatus(
+                                "앱 목록을 표시하지 못했습니다.",
+                                "error"
+                            );
+                        }
+                    );
+
+            }
+        );
+}
+
+
+if (categorySearchInput) {
+
+    categorySearchInput
+        .addEventListener(
+            "input",
+            renderSettingsCategoryApps
+        );
+}
+
+
+if (saveCategorySettingsButton) {
+
+    saveCategorySettingsButton
+        .addEventListener(
+            "click",
+            () => {
+
+                saveSettingsCategories()
+                    .catch(
+                        (error) => {
+
+                            console.error(
+                                "앱 카테고리 저장 처리 실패:",
+                                error
+                            );
+
+
+                            setCategorySettingsStatus(
+                                "저장하지 못했습니다.",
+                                "error"
+                            );
+                        }
+                    );
+
+            }
+        );
+}
+
+
+if (resetCategorySettingsButton) {
+
+    resetCategorySettingsButton
+        .addEventListener(
+            "click",
+            () => {
+
+                resetSettingsCategories()
+                    .catch(
+                        (error) => {
+
+                            console.error(
+                                "앱 카테고리 초기화 처리 실패:",
+                                error
+                            );
+
+
+                            setCategorySettingsStatus(
+                                "초기화하지 못했습니다.",
+                                "error"
+                            );
+                        }
+                    );
+
+            }
+        );
+}
+
