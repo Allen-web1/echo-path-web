@@ -3598,3 +3598,11 @@ button {
     }
 }
 
+/* =========================================
+   AUTH VISIBILITY FIX
+   HTML의 hidden 속성을 auth 전용 display:flex보다 우선 적용
+========================================= */
+.auth-gate[hidden] {
+    display: none !important;
+}
+
