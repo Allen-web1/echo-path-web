@@ -1,7 +1,6 @@
 /* =========================================
    Echo Path
    Web Authentication
-
    GitHub Pages / Android WebView 공용
 ========================================= */
 
@@ -25,7 +24,6 @@ function getAndroidBridge() {
         return null;
     }
 
-
     return window.AndroidEchoPath;
 }
 
@@ -34,8 +32,10 @@ function createBridgeRequestId() {
 
     return (
         Date.now().toString(36)
-        + "-"
-        + Math.random()
+        +
+        "-"
+        +
+        Math.random()
             .toString(36)
             .slice(2)
     );
@@ -53,7 +53,6 @@ function waitForNativeResult(
 
             let finished = false;
 
-
             const cleanup = () => {
 
                 window.removeEventListener(
@@ -64,68 +63,60 @@ function waitForNativeResult(
                 clearTimeout(timer);
             };
 
+            const finish =
+                (callback) => {
 
-            const finish = (
-                callback
-            ) => {
+                    if (finished) {
+                        return;
+                    }
 
-                if (finished) {
-                    return;
-                }
+                    finished = true;
+                    cleanup();
+                    callback();
+                };
 
-                finished = true;
-                cleanup();
-                callback();
-            };
+            const onResult =
+                (event) => {
 
+                    const detail =
+                        event?.detail ?? {};
 
-            const onResult = (
-                event
-            ) => {
+                    if (
+                        detail.requestId
+                        !==
+                        requestId
+                    ) {
+                        return;
+                    }
 
-                const detail =
-                    event?.detail ?? {};
+                    if (
+                        detail.success
+                        ===
+                        true
+                    ) {
 
+                        finish(
+                            () => resolve()
+                        );
 
-                if (
-                    detail.requestId
-                    !==
-                    requestId
-                ) {
-                    return;
-                }
+                    } else {
 
-
-                if (
-                    detail.success
-                    ===
-                    true
-                ) {
-
-                    finish(
-                        () => resolve()
-                    );
-
-                } else {
-
-                    finish(
-                        () => reject(
-                            new Error(
-                                detail.message
-                                ||
-                                "Android 연동에 실패했습니다."
+                        finish(
+                            () => reject(
+                                new Error(
+                                    detail.message
+                                    ||
+                                    "Android 연동에 실패했습니다."
+                                )
                             )
-                        )
-                    );
-                }
-            };
-
+                        );
+                    }
+                };
 
             window.addEventListener(
                 eventName,
                 onResult
             );
-
 
             const timer =
                 window.setTimeout(
@@ -155,7 +146,6 @@ async function syncAndroidLogin(
     const bridge =
         getAndroidBridge();
 
-
     if (
         !bridge
         ||
@@ -164,17 +154,14 @@ async function syncAndroidLogin(
         return;
     }
 
-
     const requestId =
         createBridgeRequestId();
-
 
     const resultPromise =
         waitForNativeResult(
             "echopath-native-login-result",
             requestId
         );
-
 
     try {
 
@@ -191,7 +178,6 @@ async function syncAndroidLogin(
         );
     }
 
-
     await resultPromise;
 }
 
@@ -201,7 +187,6 @@ async function syncAndroidLogout() {
     const bridge =
         getAndroidBridge();
 
-
     if (
         !bridge
         ||
@@ -210,10 +195,8 @@ async function syncAndroidLogout() {
         return;
     }
 
-
     const requestId =
         createBridgeRequestId();
-
 
     const resultPromise =
         waitForNativeResult(
@@ -222,11 +205,9 @@ async function syncAndroidLogout() {
             10000
         );
 
-
     bridge.logout(
         requestId
     );
-
 
     await resultPromise;
 }
@@ -239,7 +220,6 @@ function notifyAndroidOfWebUser(
     const bridge =
         getAndroidBridge();
 
-
     if (
         !bridge
         ||
@@ -249,7 +229,6 @@ function notifyAndroidOfWebUser(
     ) {
         return;
     }
-
 
     try {
 
@@ -268,10 +247,8 @@ function notifyAndroidOfWebUser(
 
 
 /*
-    WebView의 저장된 웹 세션은 살아 있지만
-    Android Collector 세션이 없는 예외 상황에서는
-    두 계정이 어긋난 채 데이터를 수집하지 않도록
-    웹 세션을 로컬에서 정리하고 한 번 다시 로그인한다.
+    웹 세션은 있는데 Android Collector 세션이 없는 경우
+    계정 불일치를 막기 위해 이 기기의 웹 세션만 정리합니다.
 */
 let handlingNativeSessionMismatch =
     false;
@@ -291,10 +268,8 @@ if (
                 return;
             }
 
-
             handlingNativeSessionMismatch =
                 true;
-
 
             try {
 
@@ -319,7 +294,7 @@ if (
 
 
 /* =========================================
-   1. 현재 로그인 사용자 확인
+   현재 로그인 사용자 확인
 ========================================= */
 
 export async function getCurrentUser() {
@@ -329,7 +304,6 @@ export async function getCurrentUser() {
         error
     } =
         await supabase.auth.getUser();
-
 
     if (error) {
 
@@ -341,24 +315,22 @@ export async function getCurrentUser() {
         return null;
     }
 
-
     const user =
         data.user ?? null;
 
-
     if (user) {
+
         notifyAndroidOfWebUser(
             user
         );
     }
-
 
     return user;
 }
 
 
 /* =========================================
-   2. 이메일 / 비밀번호 로그인
+   이메일 / 비밀번호 로그인
 ========================================= */
 
 export async function signInWithEmail(
@@ -368,7 +340,6 @@ export async function signInWithEmail(
 
     const normalizedEmail =
         email.trim();
-
 
     const {
         data,
@@ -381,21 +352,14 @@ export async function signInWithEmail(
 
             password:
                 password
-
         });
-
 
     if (error) {
         throw error;
     }
 
-
     try {
 
-        /*
-            Android 앱 안에서 로그인한 경우에만 실행된다.
-            일반 브라우저에서는 아무 동작도 하지 않는다.
-        */
         await syncAndroidLogin(
             normalizedEmail,
             password
@@ -403,10 +367,6 @@ export async function signInWithEmail(
 
     } catch (nativeError) {
 
-        /*
-            웹만 로그인되고 Collector가 다른 계정/비로그인 상태가 되는 것을
-            방지하기 위해 이 기기의 웹 세션만 되돌린다.
-        */
         await supabase.auth.signOut({
             scope: "local"
         });
@@ -414,13 +374,12 @@ export async function signInWithEmail(
         throw nativeError;
     }
 
-
     return data.user;
 }
 
 
 /* =========================================
-   3. 이메일 / 비밀번호 회원가입
+   이메일 / 비밀번호 회원가입
 ========================================= */
 
 export async function signUpWithEmail(
@@ -430,7 +389,6 @@ export async function signUpWithEmail(
 
     const normalizedEmail =
         email.trim();
-
 
     const {
         data,
@@ -443,9 +401,7 @@ export async function signUpWithEmail(
 
             password:
                 password
-
         });
-
 
     if (error) {
         throw error;
@@ -453,71 +409,144 @@ export async function signUpWithEmail(
 
 
     /*
-        이메일 확인 없이 즉시 세션이 발급되는 설정이라면
-        Android Collector도 같은 계정으로 연결한다.
-        이메일 확인이 필요한 경우에는 이후 실제 로그인 때 연결된다.
+        Supabase는 이메일 존재 여부 노출을 줄이기 위해
+        이미 가입된 계정에 대해 오류 대신 빈 identities를
+        반환할 수 있습니다.
     */
     if (
-        data.session
-        &&
         data.user
+        &&
+        Array.isArray(
+            data.user.identities
+        )
+        &&
+        data.user.identities.length === 0
     ) {
 
-        try {
-
-            await syncAndroidLogin(
-                normalizedEmail,
-                password
+        const alreadyRegisteredError =
+            new Error(
+                "User already registered"
             );
 
-        } catch (nativeError) {
+        alreadyRegisteredError.code =
+            "user_already_registered";
 
-            await supabase.auth.signOut({
-                scope: "local"
-            });
-
-            throw nativeError;
-        }
+        throw alreadyRegisteredError;
     }
 
 
-    return {
-        user:
-            data.user ?? null,
+    /*
+        이메일 인증이 필요한 프로젝트라면 session이 없으므로
+        여기서는 네이티브 로그인을 시도하지 않습니다.
+        인증 후 실제 로그인할 때 Android Collector가 연결됩니다.
+    */
+    if (
+        !data.session
+        ||
+        !data.user
+    ) {
 
-        session:
-            data.session ?? null
-    };
+        return {
+            user:
+                data.user ?? null,
+
+            session:
+                data.session ?? null,
+
+            nativeSyncFailed:
+                false
+        };
+    }
+
+
+    /*
+        이메일 확인 없이 즉시 세션이 발급되는 경우
+        Android Collector도 같은 계정으로 연결합니다.
+
+        중요:
+        계정 생성 자체가 성공한 뒤 Android 연결만 실패한 경우
+        "회원가입 실패"라고 표시하면 사용자가 같은 이메일로
+        계속 재가입을 시도하게 됩니다.
+
+        따라서 계정 생성 성공 여부와 네이티브 연결 성공 여부를
+        분리해서 반환합니다.
+    */
+    try {
+
+        await syncAndroidLogin(
+            normalizedEmail,
+            password
+        );
+
+        return {
+            user:
+                data.user,
+
+            session:
+                data.session,
+
+            nativeSyncFailed:
+                false
+        };
+
+    } catch (nativeError) {
+
+        console.warn(
+            "회원가입은 완료됐지만 Android Collector 연결 실패:",
+            nativeError
+        );
+
+        /*
+            웹만 로그인된 상태로 남지 않도록 로컬 웹 세션을 정리합니다.
+            계정은 Supabase에 정상 생성된 상태입니다.
+            사용자는 로그인 탭에서 한 번 로그인하면 됩니다.
+        */
+        await supabase.auth.signOut({
+            scope: "local"
+        });
+
+        return {
+            user:
+                data.user,
+
+            session:
+                null,
+
+            nativeSyncFailed:
+                true,
+
+            nativeSyncMessage:
+                nativeError?.message
+                ??
+                "Android Collector 연결 실패"
+        };
+    }
 }
 
 
 /* =========================================
-   4. 로그아웃
+   로그아웃
 ========================================= */
 
 export async function signOut() {
 
-    let nativeError = null;
-
+    let nativeError =
+        null;
 
     try {
 
-        /*
-            앱 안에서는 Collector를 먼저 중지하고
-            Android 세션을 종료한다.
-        */
         await syncAndroidLogout();
 
     } catch (error) {
 
-        nativeError = error;
+        nativeError =
+            error;
 
         console.error(
             "Android 로그아웃 연동 실패:",
             error
         );
     }
-
 
     const {
         error
@@ -526,33 +555,27 @@ export async function signOut() {
             scope: "local"
         });
 
-
     if (error) {
         throw error;
     }
 
-
-    /*
-        Android 쪽은 로그아웃 요청 즉시 수집 중지 플래그를 저장하므로
-        네트워크 오류가 있어도 다시 로그인하기 전까지 수집하지 않는다.
-    */
     if (nativeError) {
+
         console.warn(
-            "웹 로그아웃은 완료되었지만 Android 세션 정리 중 오류가 있었습니다."
+            "웹 로그아웃은 완료됐지만 Android 세션 정리 중 오류가 있었습니다."
         );
     }
 }
 
 
 /* =========================================
-   5. 로그인 여부
+   로그인 여부
 ========================================= */
 
 export async function isSignedIn() {
 
     const user =
         await getCurrentUser();
-
 
     return Boolean(
         user
