@@ -1270,36 +1270,50 @@ if (signupForm) {
                     즉시 session이 생성됨
                 */
 
-                if (result.session) {
+                if (
+                    result.nativeSyncFailed
+                ) {
+
+                    if (loginEmail) {
+
+                        loginEmail.value =
+                            signupEmail.value.trim();
+                    }
+
+                    showLoginMode();
+
+                    setAuthStatus(
+                        "✅ 계정은 정상적으로 만들어졌습니다. 앱 수집기 연결을 위해 지금 한 번 로그인해 주세요."
+                    );
+
+                } else if (result.session) {
 
                     setAuthStatus("");
 
                     window.location.reload();
+
                 } else {
 
-                if (loginEmail) {
+                    if (loginEmail) {
 
-                     loginEmail.value =
-                         signupEmail.value.trim();
+                        loginEmail.value =
+                            signupEmail.value.trim();
+                    }
+
+                    alert(
+                        "회원가입이 완료되었습니다!\n\n" +
+                        "📧 가입한 이메일의 받은편지함으로 이동해 주세요.\n\n" +
+                        "Supabase에서 보낸 인증 메일을 열고\n" +
+                        "이메일 인증 링크를 반드시 눌러야 합니다.\n\n" +
+                        "✅ 이메일 인증 완료 후 Echo Path로 돌아와 로그인해 주세요."
+                    );
+
+                    showLoginMode();
+
+                    setAuthStatus(
+                        "📧 이메일 인증이 필요합니다. 받은편지함에서 인증 메일을 확인한 후 로그인해 주세요."
+                    );
                 }
-
-
-                alert(
-                    "회원가입이 완료되었습니다!\n\n" +
-                    "📧 가입한 이메일의 받은편지함으로 이동해 주세요.\n\n" +
-                    "Supabase에서 보낸 인증 메일을 열고\n" +
-                    "이메일 인증 링크를 반드시 눌러야 합니다.\n\n" +
-                    "✅ 이메일 인증 완료 후 Echo Path로 돌아와 로그인해 주세요."
-                );
-
-
-                showLoginMode();
-
-
-                setAuthStatus(
-                    "📧 이메일 인증이 필요합니다. 받은편지함에서 인증 메일을 확인한 후 로그인해 주세요."
-                );
-            }
 
             } catch (error) {
 
@@ -1327,15 +1341,89 @@ if (signupForm) {
                     )
                 ) {
 
+                    if (loginEmail) {
+
+                        loginEmail.value =
+                            signupEmail.value.trim();
+                    }
+
+                    showLoginMode();
+
                     setAuthStatus(
-                        "이미 가입된 이메일입니다. 로그인해 주세요.",
+                        "이미 만들어진 계정입니다. 방금 입력한 비밀번호로 로그인해 주세요.",
+                        true
+                    );
+
+                } else if (
+                    rawMessage.includes(
+                        "password"
+                    )
+                    &&
+                    (
+                        rawMessage.includes(
+                            "least"
+                        )
+                        ||
+                        rawMessage.includes(
+                            "weak"
+                        )
+                        ||
+                        rawMessage.includes(
+                            "characters"
+                        )
+                    )
+                ) {
+
+                    setAuthStatus(
+                        "비밀번호 조건을 충족하지 못했습니다. 더 길고 복잡한 비밀번호로 다시 시도해 주세요.",
+                        true
+                    );
+
+                } else if (
+                    rawMessage.includes(
+                        "rate limit"
+                    )
+                    ||
+                    rawMessage.includes(
+                        "too many"
+                    )
+                ) {
+
+                    setAuthStatus(
+                        "회원가입 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+                        true
+                    );
+
+                } else if (
+                    rawMessage.includes(
+                        "signup"
+                    )
+                    &&
+                    rawMessage.includes(
+                        "disabled"
+                    )
+                ) {
+
+                    setAuthStatus(
+                        "현재 회원가입이 비활성화되어 있습니다.",
                         true
                     );
 
                 } else {
 
+                    const detail =
+                        String(
+                            error?.message
+                            ?? ""
+                        )
+                        .trim();
+
                     setAuthStatus(
-                        "회원가입에 실패했습니다. 이메일과 비밀번호를 확인해 주세요.",
+                        detail
+                            ?
+                            `회원가입 오류: ${detail}`
+                            :
+                            "회원가입에 실패했습니다. 잠시 후 다시 시도해 주세요.",
                         true
                     );
                 }
