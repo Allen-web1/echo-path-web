@@ -124,6 +124,127 @@ function getActivityType(
 
 
 /* =========================================
+   사용자 앱 카테고리 재분류
+   Supabase Auth user_metadata에 저장된 값을
+   웹 표시/통계용 카테고리에만 적용합니다.
+========================================= */
+
+function getCategoryOverrides(
+    user
+) {
+
+    const value =
+        user?.user_metadata
+            ?.app_category_overrides;
+
+
+    if (
+        !value
+        ||
+        typeof value !== "object"
+        ||
+        Array.isArray(value)
+    ) {
+
+        return {};
+
+    }
+
+
+    return value;
+}
+
+
+function resolveUserCategory(
+    packageName,
+    originalCategory,
+    overrides
+) {
+
+    const key =
+        String(
+            packageName
+            ?? ""
+        ).trim();
+
+
+    const override =
+        key
+            ? String(
+                overrides?.[key]
+                ?? ""
+            ).trim()
+            : "";
+
+
+    return (
+        override
+        ||
+        originalCategory
+        ||
+        "기타"
+    );
+}
+
+
+function applyCategoryOverridesToAppRows(
+    rows,
+    overrides
+) {
+
+    return (
+        rows
+        ?? []
+    ).map(
+        (item) => ({
+
+            ...item,
+
+            category:
+                resolveUserCategory(
+                    item.package_name,
+                    item.category,
+                    overrides
+                )
+
+        })
+    );
+}
+
+
+function applyCategoryOverridesToTransitionRows(
+    rows,
+    overrides
+) {
+
+    return (
+        rows
+        ?? []
+    ).map(
+        (item) => ({
+
+            ...item,
+
+            from_category:
+                resolveUserCategory(
+                    item.from_package,
+                    item.from_category,
+                    overrides
+                ),
+
+            to_category:
+                resolveUserCategory(
+                    item.to_package,
+                    item.to_category,
+                    overrides
+                )
+
+        })
+    );
+}
+
+
+/* =========================================
    ms → 분
 ========================================= */
 
@@ -1460,14 +1581,42 @@ export async function loadEchoPathUsageData() {
         ?? [];
 
 
-    const appRows =
+    /*
+        사용자가 설정 화면에서 바꾼 앱 분류는
+        Supabase Auth user_metadata에 계정별로 저장합니다.
+
+        원본 daily/hourly 테이블의 category 값은 수정하지 않고,
+        웹에서 데이터를 구성하는 시점에만 덮어씁니다.
+    */
+
+    const categoryOverrides =
+        getCategoryOverrides(
+            user
+        );
+
+
+    const rawAppRows =
         appsResult.data
         ?? [];
 
 
-    const transitions =
+    const appRows =
+        applyCategoryOverridesToAppRows(
+            rawAppRows,
+            categoryOverrides
+        );
+
+
+    const rawTransitions =
         transitionsResult.data
         ?? [];
+
+
+    const transitions =
+        applyCategoryOverridesToTransitionRows(
+            rawTransitions,
+            categoryOverrides
+        );
 
 
     const loopRows =
@@ -1481,10 +1630,17 @@ export async function loadEchoPathUsageData() {
             : (hourlyMetricsResult.data ?? []);
 
 
-    const hourlyAppRows =
+    const rawHourlyAppRows =
         hourlyAppsResult.error
             ? []
             : (hourlyAppsResult.data ?? []);
+
+
+    const hourlyAppRows =
+        applyCategoryOverridesToAppRows(
+            rawHourlyAppRows,
+            categoryOverrides
+        );
 
 
     const hourlyVisualization =
@@ -1855,6 +2011,9 @@ export async function loadEchoPathUsageData() {
 
 
         apps,
+
+
+        categoryOverrides,
 
 
         /*
