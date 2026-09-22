@@ -3278,3 +3278,323 @@ button {
     line-height: 1.7;
 }
 
+/* =========================================
+   AUTH GATE - DEPLOYMENT UI
+   로그인/회원가입 화면 전용 스타일
+   기존 앱/통계/DDI/리포트 스타일 및 JS 동작에는 영향 없음
+========================================= */
+
+.auth-gate {
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 32px 20px;
+
+    background:
+        radial-gradient(
+            circle at 12% 10%,
+            rgba(56, 103, 244, 0.14),
+            transparent 34%
+        ),
+        radial-gradient(
+            circle at 88% 90%,
+            rgba(107, 130, 255, 0.10),
+            transparent 30%
+        ),
+        linear-gradient(
+            180deg,
+            #f8faff 0%,
+            #f3f6fb 100%
+        );
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 420px;
+
+    padding: 34px 30px 30px;
+
+    border: 1px solid #e3e9f3;
+    border-radius: 26px;
+
+    background: rgba(255, 255, 255, 0.97);
+
+    box-shadow:
+        0 24px 60px rgba(23, 32, 51, 0.10),
+        0 4px 14px rgba(23, 32, 51, 0.05);
+}
+
+.auth-card .brand-label {
+    margin-bottom: 10px;
+
+    color: #3867f4;
+
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 1.7px;
+}
+
+.auth-card > h1 {
+    margin: 0;
+
+    color: #172033;
+
+    font-size: 38px;
+    line-height: 1.1;
+    letter-spacing: -1.5px;
+}
+
+.auth-description {
+    margin: 12px 0 24px;
+
+    color: #718096;
+
+    font-size: 14px;
+    line-height: 1.65;
+}
+
+.auth-mode-selector {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 5px;
+
+    padding: 5px;
+    margin-bottom: 22px;
+
+    border: 1px solid #e8ecf3;
+    border-radius: 14px;
+
+    background: #f3f5f9;
+}
+
+.auth-mode-button {
+    min-height: 42px;
+
+    padding: 9px 12px;
+
+    border: 0;
+    border-radius: 10px;
+
+    background: transparent;
+    color: #8994a6;
+
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 800;
+
+    cursor: pointer;
+
+    transition:
+        background 0.18s ease,
+        color 0.18s ease,
+        box-shadow 0.18s ease,
+        transform 0.18s ease;
+}
+
+.auth-mode-button:hover {
+    color: #526074;
+}
+
+.auth-mode-button:active {
+    transform: scale(0.98);
+}
+
+.auth-mode-button.active {
+    background: #ffffff;
+    color: #3867f4;
+
+    box-shadow:
+        0 3px 10px rgba(23, 32, 51, 0.08);
+}
+
+.auth-gate form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.auth-gate form[hidden] {
+    display: none;
+}
+
+.auth-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.auth-field > span {
+    color: #526074;
+
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.auth-field input {
+    width: 100%;
+    min-height: 50px;
+
+    padding: 0 14px;
+
+    border: 1px solid #dfe5ee;
+    border-radius: 13px;
+
+    outline: none;
+
+    background: #fbfcfe;
+    color: #172033;
+
+    font-family: inherit;
+    font-size: 14px;
+
+    transition:
+        border-color 0.18s ease,
+        background 0.18s ease,
+        box-shadow 0.18s ease;
+}
+
+.auth-field input::placeholder {
+    color: #a4adbb;
+}
+
+.auth-field input:hover {
+    border-color: #cfd7e4;
+    background: #ffffff;
+}
+
+.auth-field input:focus {
+    border-color: #6f8cff;
+    background: #ffffff;
+
+    box-shadow:
+        0 0 0 4px rgba(56, 103, 244, 0.10);
+}
+
+.auth-submit-button {
+    width: 100%;
+    min-height: 52px;
+
+    margin-top: 3px;
+    padding: 12px 16px;
+
+    border: 0;
+    border-radius: 14px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #3867f4,
+            #3158d7
+        );
+
+    color: #ffffff;
+
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 900;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 10px 22px rgba(56, 103, 244, 0.22);
+
+    transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        filter 0.18s ease;
+}
+
+.auth-submit-button:hover {
+    filter: brightness(1.03);
+
+    box-shadow:
+        0 13px 28px rgba(56, 103, 244, 0.27);
+}
+
+.auth-submit-button:active {
+    transform: scale(0.985);
+}
+
+.auth-mode-button:focus-visible,
+.auth-submit-button:focus-visible {
+    outline: 3px solid rgba(56, 103, 244, 0.18);
+    outline-offset: 2px;
+}
+
+.auth-status {
+    min-height: 20px;
+
+    margin: 15px 0 0;
+
+    color: #718096;
+
+    font-size: 12px;
+    line-height: 1.55;
+
+    overflow-wrap: anywhere;
+}
+
+/* 로그인 중 버튼 비활성화 등에 대비 */
+.auth-submit-button:disabled,
+.auth-mode-button:disabled {
+    opacity: 0.58;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* 태블릿/모바일 */
+@media (max-width: 520px) {
+    .auth-gate {
+        align-items: center;
+
+        padding:
+            max(22px, env(safe-area-inset-top))
+            16px
+            max(22px, env(safe-area-inset-bottom));
+    }
+
+    .auth-card {
+        max-width: 400px;
+
+        padding: 30px 22px 26px;
+
+        border-radius: 22px;
+    }
+
+    .auth-card > h1 {
+        font-size: 34px;
+    }
+
+    .auth-description {
+        margin-bottom: 21px;
+    }
+}
+
+@media (max-width: 360px) {
+    .auth-card {
+        padding: 26px 18px 22px;
+    }
+
+    .auth-card > h1 {
+        font-size: 31px;
+    }
+
+    .auth-field input,
+    .auth-submit-button {
+        min-height: 48px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .auth-mode-button,
+    .auth-field input,
+    .auth-submit-button {
+        transition: none;
+    }
+}
+
