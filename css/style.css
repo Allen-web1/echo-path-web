@@ -1,0 +1,3280 @@
+* {
+    box-sizing: border-box;
+}
+
+html {
+    font-family:
+        "Pretendard",
+        "Noto Sans KR",
+        "Apple SD Gothic Neo",
+        Arial,
+        sans-serif;
+}
+
+body {
+    margin: 0;
+    background: #f5f7fb;
+    color: #172033;
+}
+
+button {
+    font: inherit;
+}
+
+
+/* =========================
+   APP
+========================= */
+
+#app {
+    width: 100%;
+    max-width: 480px;
+    min-height: 100vh;
+
+    margin: 0 auto;
+
+    background: #ffffff;
+
+    padding-bottom: 90px;
+
+    position: relative;
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 20px;
+}
+
+.brand-label,
+.section-label {
+    margin: 0 0 5px;
+
+    font-size: 11px;
+    font-weight: 700;
+
+    letter-spacing: 1.2px;
+
+    color: #718096;
+}
+
+.app-header h1 {
+    margin: 0;
+
+    font-size: 24px;
+}
+
+.profile-button {
+    width: 42px;
+    height: 42px;
+
+    border: 0;
+    border-radius: 50%;
+
+    background: #3867f4;
+    color: white;
+
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+
+/* =========================
+   MAIN
+========================= */
+
+.app-main {
+    padding: 0 20px;
+}
+
+.hero-section {
+    padding: 15px 0 22px;
+}
+
+.hero-section h2 {
+    margin: 0;
+
+    font-size: 27px;
+}
+
+.hero-description {
+    margin: 9px 0 0;
+
+    color: #718096;
+
+    line-height: 1.6;
+}
+
+
+/* =========================
+   SUMMARY
+========================= */
+
+.summary-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 12px;
+
+    margin-bottom: 18px;
+}
+
+.summary-card {
+    padding: 18px;
+
+    border: 1px solid #e8ecf3;
+    border-radius: 18px;
+
+    background: white;
+}
+
+.summary-title {
+    display: block;
+
+    margin-bottom: 10px;
+
+    font-size: 13px;
+
+    color: #718096;
+}
+
+.summary-value {
+    font-size: 22px;
+}
+
+
+/* =========================
+   MAP PREVIEW
+========================= */
+
+.map-preview-card {
+    padding: 18px;
+
+    border-radius: 22px;
+
+    background: #172033;
+
+    color: white;
+
+    margin-bottom: 28px;
+}
+
+.card-header {
+    display: flex;
+
+    justify-content: space-between;
+    align-items: center;
+
+    margin-bottom: 16px;
+}
+
+.card-header h3 {
+    margin: 0;
+
+    font-size: 19px;
+}
+
+.text-button {
+    border: 0;
+
+    background: transparent;
+    color: #a9b8ff;
+
+    cursor: pointer;
+}
+
+
+/* =========================
+   TEMP DIGITAL CITY
+========================= */
+
+.map-placeholder {
+    height: 260px;
+
+    position: relative;
+
+    overflow: hidden;
+
+    border-radius: 16px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #202c45,
+            #111827
+        );
+}
+
+.map-placeholder::before {
+    content: "";
+
+    position: absolute;
+
+    inset: 0;
+
+    background-image:
+        linear-gradient(
+            rgba(255,255,255,0.05) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(255,255,255,0.05) 1px,
+            transparent 1px
+        );
+
+    background-size: 32px 32px;
+}
+
+.building {
+    position: absolute;
+
+    display: flex;
+
+    align-items: flex-end;
+    justify-content: center;
+
+    padding-bottom: 10px;
+
+    border-radius: 8px 8px 3px 3px;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    box-shadow:
+        0 10px 25px rgba(0,0,0,0.3);
+}
+
+.building-study {
+    width: 65px;
+    height: 125px;
+
+    left: 32px;
+    bottom: 28px;
+
+    background: #5b7cfa;
+}
+
+.building-media {
+    width: 72px;
+    height: 170px;
+
+    left: 132px;
+    bottom: 28px;
+
+    background: #ef5b5b;
+}
+
+.building-social {
+    width: 58px;
+    height: 100px;
+
+    right: 55px;
+    bottom: 28px;
+
+    background: #35a86b;
+}
+
+.building-shopping {
+    width: 50px;
+    height: 72px;
+
+    right: 18px;
+    bottom: 28px;
+
+    background: #e79838;
+}
+
+
+/* =========================
+   FEATURES
+========================= */
+
+.feature-section h3 {
+    margin: 0 0 16px;
+
+    font-size: 21px;
+}
+
+.feature-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 12px;
+}
+
+.feature-card {
+    min-height: 160px;
+
+    padding: 17px;
+
+    border: 1px solid #e8ecf3;
+    border-radius: 18px;
+
+    background: white;
+}
+
+.feature-number {
+    display: block;
+
+    margin-bottom: 14px;
+
+    color: #3867f4;
+
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.feature-card strong {
+    display: block;
+
+    margin-bottom: 8px;
+
+    font-size: 15px;
+}
+
+.feature-card p {
+    margin: 0;
+
+    color: #718096;
+
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+
+/* =========================
+   BOTTOM NAV
+========================= */
+
+.bottom-nav {
+    position: fixed;
+
+    bottom: 0;
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    width: 100%;
+    max-width: 480px;
+
+    height: 72px;
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(5, 1fr);
+
+    background: white;
+
+    border-top:
+        1px solid #e8ecf3;
+
+    z-index: 100;
+}
+
+.nav-button {
+    border: 0;
+
+    background: transparent;
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: center;
+    align-items: center;
+
+    gap: 4px;
+
+    color: #8a94a6;
+
+    font-size: 11px;
+
+    cursor: pointer;
+}
+
+.nav-button.active {
+    color: #3867f4;
+}
+
+.nav-icon {
+    font-size: 20px;
+}
+
+.map-nav-button {
+    position: relative;
+}
+
+.nav-main-icon {
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    margin-top: -24px;
+
+    border-radius: 50%;
+
+    background: #3867f4;
+
+    color: white;
+
+    font-size: 20px;
+
+    box-shadow:
+        0 5px 14px rgba(56,103,244,0.35);
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 380px) {
+
+    .summary-grid,
+    .feature-grid {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+/* =========================
+   PAGE SYSTEM
+========================= */
+
+.page {
+    display: none;
+}
+
+.page.active-page {
+    display: block;
+}
+
+.page-header {
+    padding: 14px 0 22px;
+}
+
+.page-header h2 {
+    margin: 0 0 8px;
+
+    font-size: 27px;
+}
+
+.page-header p:last-child {
+    margin: 0;
+
+    color: #718096;
+
+    line-height: 1.6;
+}
+
+
+/* =========================
+   PLACEHOLDER PANEL
+========================= */
+
+.placeholder-panel {
+    padding: 20px;
+
+    margin-bottom: 14px;
+
+    border: 1px solid #e8ecf3;
+
+    border-radius: 18px;
+
+    background: #ffffff;
+}
+
+.placeholder-panel h3 {
+    margin: 0 0 8px;
+
+    font-size: 17px;
+}
+
+.placeholder-panel p {
+    margin: 0;
+
+    color: #718096;
+
+    font-size: 14px;
+
+    line-height: 1.6;
+}
+
+
+/* =========================
+   DDI
+========================= */
+
+.ddi-main-card {
+    padding: 24px;
+
+    margin-bottom: 14px;
+
+    border-radius: 22px;
+
+    background: #172033;
+
+    color: white;
+}
+
+.ddi-label {
+    display: block;
+
+    margin-bottom: 10px;
+
+    font-size: 11px;
+
+    font-weight: 800;
+
+    letter-spacing: 1.2px;
+
+    color: #9aa8bd;
+}
+
+.ddi-main-value {
+    display: block;
+
+    margin-bottom: 8px;
+
+    font-size: 38px;
+}
+
+.ddi-main-card p {
+    margin: 0;
+
+    color: #b6c0d0;
+
+    font-size: 13px;
+}
+
+.ddi-variable-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 12px;
+
+    margin-bottom: 18px;
+}
+
+.ddi-variable-card {
+    padding: 18px;
+
+    border: 1px solid #e8ecf3;
+
+    border-radius: 18px;
+
+    background: white;
+}
+
+.ddi-variable-card span {
+    display: block;
+
+    margin-bottom: 10px;
+
+    font-weight: 800;
+
+    color: #3867f4;
+}
+
+.ddi-variable-card strong {
+    display: block;
+
+    font-size: 22px;
+}
+
+.ddi-variable-card p {
+    margin: 5px 0 0;
+
+    color: #718096;
+
+    font-size: 12px;
+}
+
+
+/* =========================
+   REPORT
+========================= */
+
+.report-card {
+    padding: 20px;
+
+    margin-bottom: 14px;
+
+    border-radius: 18px;
+
+    border: 1px solid #e8ecf3;
+
+    background: white;
+}
+
+.report-category {
+    display: block;
+
+    margin-bottom: 10px;
+
+    color: #3867f4;
+
+    font-size: 11px;
+
+    font-weight: 800;
+
+    letter-spacing: 0.8px;
+}
+
+.report-card h3 {
+    margin: 0 0 8px;
+
+    font-size: 17px;
+}
+
+.report-card p {
+    margin: 0;
+
+    color: #718096;
+
+    font-size: 14px;
+
+    line-height: 1.6;
+}
+
+
+/* =========================
+   SETTINGS
+========================= */
+
+.settings-card {
+    display: flex;
+
+    align-items: center;
+
+    min-height: 100px;
+
+    padding: 20px;
+
+    margin-bottom: 14px;
+
+    border: 1px solid #e8ecf3;
+
+    border-radius: 18px;
+
+    background: white;
+}
+
+.settings-card strong {
+    display: block;
+
+    margin-bottom: 7px;
+}
+
+.settings-card p {
+    margin: 0;
+
+    color: #718096;
+
+    font-size: 13px;
+
+    line-height: 1.55;
+}
+
+/* =========================================
+   STATISTICS
+========================================= */
+
+.chart-card,
+.timeline-card {
+    padding: 20px;
+
+    margin-bottom: 16px;
+
+    border: 1px solid #e8ecf3;
+
+    border-radius: 20px;
+
+    background: #ffffff;
+}
+
+
+.chart-card-header {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 18px;
+}
+
+
+.chart-card-header h3 {
+    margin: 0;
+
+    font-size: 18px;
+}
+
+
+.chart-container {
+    position: relative;
+
+    width: 100%;
+
+    height: 260px;
+}
+
+
+.doughnut-container {
+    height: 240px;
+}
+
+
+
+/* =========================================
+   ACTIVITY BALANCE
+========================================= */
+
+.activity-summary {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 10px;
+
+    margin-top: 18px;
+}
+
+
+.activity-summary > div {
+    padding: 14px;
+
+    border-radius: 14px;
+
+    background: #f5f7fb;
+}
+
+
+.activity-summary span {
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: #718096;
+
+    font-size: 12px;
+}
+
+
+.activity-summary strong {
+    font-size: 18px;
+}
+
+
+
+/* =========================================
+   TIMELINE
+========================================= */
+
+.usage-timeline {
+    display: flex;
+
+    flex-direction: column;
+}
+
+
+.timeline-item {
+    display: grid;
+
+    grid-template-columns:
+        58px
+        24px
+        1fr;
+
+    gap: 8px;
+
+    align-items: flex-start;
+}
+
+
+.timeline-time {
+    padding-top: 3px;
+
+    font-size: 13px;
+
+    font-weight: 700;
+
+    color: #526074;
+}
+
+
+.timeline-line {
+    position: relative;
+
+    display: flex;
+
+    justify-content: center;
+}
+
+
+.timeline-dot {
+    width: 12px;
+
+    height: 12px;
+
+    margin-top: 4px;
+
+    border-radius: 50%;
+
+    background: #3867f4;
+
+    box-shadow:
+        0 0 0 4px
+        rgba(56, 103, 244, 0.12);
+}
+
+
+.timeline-content {
+    padding: 0 0 10px;
+}
+
+
+.timeline-content strong {
+    display: block;
+
+    margin-bottom: 3px;
+
+    font-size: 15px;
+}
+
+
+.timeline-content span {
+    display: block;
+
+    color: #718096;
+
+    font-size: 12px;
+}
+
+
+.timeline-content p {
+    margin: 5px 0 0;
+
+    font-size: 13px;
+
+    font-weight: 700;
+}
+
+
+.timeline-arrow {
+    margin:
+        -3px 0
+        7px 66px;
+
+    color: #a8b2c1;
+
+    font-size: 19px;
+}
+
+/* =========================================
+   PERIOD SELECTOR
+========================================= */
+
+.period-selector {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 6px;
+
+    padding: 5px;
+
+    margin-bottom: 18px;
+
+    border-radius: 14px;
+
+    background: #f1f4f9;
+}
+
+
+.period-button {
+    min-height: 42px;
+
+    border: 0;
+
+    border-radius: 10px;
+
+    background: transparent;
+
+    color: #718096;
+
+    font-size: 13px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+
+.period-button.active {
+    background: #ffffff;
+
+    color: #3867f4;
+
+    box-shadow:
+        0 2px 8px
+        rgba(23, 32, 51, 0.08);
+}
+
+
+
+/* =========================================
+   PERIOD SUMMARY
+========================================= */
+
+.period-summary {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: flex-end;
+
+    margin-bottom: 15px;
+}
+
+
+.period-summary span {
+    color: #718096;
+
+    font-size: 13px;
+}
+
+
+.period-summary strong {
+    font-size: 25px;
+
+    color: #172033;
+}
+
+
+
+/* =========================================
+   HEATMAP
+========================================= */
+
+.heatmap-description {
+    margin:
+        -7px 0 16px;
+
+    color: #718096;
+
+    font-size: 13px;
+
+    line-height: 1.5;
+}
+
+
+.heatmap-scroll {
+    width: 100%;
+
+    overflow-x: auto;
+
+    padding-bottom: 8px;
+}
+
+
+.usage-heatmap {
+    display: grid;
+
+    grid-template-columns:
+        32px
+        repeat(24, 18px);
+
+    grid-auto-rows:
+        18px;
+
+    gap: 3px;
+
+    width: max-content;
+
+    min-width: 100%;
+}
+
+
+.heatmap-corner {
+    width: 32px;
+}
+
+
+.heatmap-hour {
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    color: #8a94a6;
+
+    font-size: 8px;
+}
+
+
+.heatmap-day {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    color: #526074;
+}
+
+
+.heatmap-cell {
+    width: 18px;
+
+    height: 18px;
+
+    border-radius: 4px;
+}
+
+
+
+/* 사용 활성도 단계 */
+
+.level-0 {
+    background:
+        #edf1f6;
+}
+
+
+.level-1 {
+    background:
+        #dce4ff;
+}
+
+
+.level-2 {
+    background:
+        #b4c5ff;
+}
+
+
+.level-3 {
+    background:
+        #7995fa;
+}
+
+
+.level-4 {
+    background:
+        #3867f4;
+}
+
+
+
+/* =========================================
+   HEATMAP LEGEND
+========================================= */
+
+.heatmap-legend {
+    display: flex;
+
+    justify-content: flex-end;
+
+    align-items: center;
+
+    gap: 5px;
+
+    margin-top: 10px;
+
+    color: #718096;
+
+    font-size: 10px;
+}
+
+
+.legend-cell {
+    width: 14px;
+
+    height: 14px;
+
+    border-radius: 3px;
+}
+
+/* =========================================
+   DDI HEATMAP
+========================================= */
+
+.ddi-heatmap-info {
+    padding: 14px;
+
+    margin-bottom: 16px;
+
+    border-radius: 14px;
+
+    background: #f7f8fb;
+}
+
+
+.ddi-heatmap-info strong {
+    display: block;
+
+    margin-bottom: 5px;
+
+    font-size: 13px;
+
+    color: #172033;
+}
+
+
+.ddi-heatmap-info p {
+    margin: 0;
+
+    color: #718096;
+
+    font-size: 12px;
+
+    line-height: 1.5;
+}
+
+
+
+/* DDI 복잡도 단계 */
+
+.ddi-level-0 {
+    background: #edf1f6;
+}
+
+
+.ddi-level-1 {
+    background: #d9eadf;
+}
+
+
+.ddi-level-2 {
+    background: #f3df9a;
+}
+
+
+.ddi-level-3 {
+    background: #efaa72;
+}
+
+
+.ddi-level-4 {
+    background: #e56b6f;
+}
+
+/* =========================================
+   DDI TOP TIMES
+========================================= */
+
+.ddi-top-times {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 12px;
+}
+
+
+.ddi-time-card {
+    display: grid;
+
+    grid-template-columns:
+        40px 1fr;
+
+    gap: 12px;
+
+    padding: 15px;
+
+    border: 1px solid #e8ecf3;
+
+    border-radius: 16px;
+
+    background: #ffffff;
+}
+
+
+/* 순위 */
+
+.ddi-rank {
+    width: 36px;
+
+    height: 36px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 12px;
+
+    background: #172033;
+
+    color: white;
+
+    font-size: 15px;
+
+    font-weight: 800;
+}
+
+
+
+/* 오른쪽 전체 내용 */
+
+.ddi-time-content {
+    min-width: 0;
+}
+
+
+
+/* 시간 + DDI */
+
+.ddi-time-header {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    gap: 10px;
+
+    margin-bottom: 9px;
+}
+
+
+.ddi-time-header > strong {
+    font-size: 15px;
+}
+
+
+.ddi-time-score {
+    flex-shrink: 0;
+
+    padding: 5px 8px;
+
+    border-radius: 8px;
+
+    background: #fff0ef;
+
+    color: #d84d55;
+
+    font-size: 12px;
+
+    font-weight: 800;
+}
+
+
+
+/* 앱 이동 경로 */
+
+.ddi-route {
+    margin-bottom: 11px;
+
+    color: #526074;
+
+    font-size: 12px;
+
+    line-height: 1.6;
+
+    overflow-wrap: anywhere;
+}
+
+
+
+/* N / C / R */
+
+.ddi-time-metrics {
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 6px;
+}
+
+
+.ddi-time-metrics span {
+    padding: 5px 8px;
+
+    border-radius: 8px;
+
+    background: #f5f7fb;
+
+    color: #718096;
+
+    font-size: 10px;
+}
+
+
+.ddi-time-metrics strong {
+    margin-left: 3px;
+
+    color: #172033;
+}
+
+
+
+/* 데이터 없을 때 */
+
+.empty-message {
+    margin: 0;
+
+    color: #718096;
+
+    font-size: 13px;
+}
+
+/* =========================================
+   DDI CONTRIBUTION
+========================================= */
+
+.ddi-contribution-card {
+    padding: 20px;
+
+    margin-bottom: 18px;
+
+    border: 1px solid #e8ecf3;
+
+    border-radius: 20px;
+
+    background: #ffffff;
+}
+
+
+.ddi-contribution-header h3 {
+    margin: 0;
+
+    font-size: 18px;
+}
+
+
+.ddi-contribution-description {
+    margin:
+        8px 0 22px;
+
+    color: #718096;
+
+    font-size: 13px;
+
+    line-height: 1.6;
+}
+
+
+
+/* =========================================
+   CONTRIBUTION ITEM
+========================================= */
+
+.contribution-item {
+    margin-bottom: 21px;
+}
+
+
+.contribution-title-row {
+    display: flex;
+
+    align-items: flex-end;
+
+    justify-content: space-between;
+
+    gap: 12px;
+
+    margin-bottom: 9px;
+}
+
+
+.contribution-title-row > div:first-child {
+    min-width: 0;
+}
+
+
+.contribution-title-row > div:first-child strong {
+    display: block;
+
+    margin-bottom: 3px;
+
+    font-size: 14px;
+
+    color: #172033;
+}
+
+
+.contribution-title-row > div:first-child span {
+    color: #8a94a6;
+
+    font-size: 11px;
+}
+
+
+
+/* 오른쪽 수치 */
+
+.contribution-value {
+    flex-shrink: 0;
+
+    text-align: right;
+}
+
+
+.contribution-value strong {
+    display: block;
+
+    font-size: 14px;
+
+    color: #172033;
+}
+
+
+.contribution-value span {
+    display: block;
+
+    margin-top: 2px;
+
+    color: #718096;
+
+    font-size: 11px;
+}
+
+
+
+/* =========================================
+   CONTRIBUTION BAR
+========================================= */
+
+.contribution-track {
+    width: 100%;
+
+    height: 9px;
+
+    overflow: hidden;
+
+    border-radius: 999px;
+
+    background: #edf1f6;
+}
+
+
+.contribution-bar {
+    width: 0;
+
+    height: 100%;
+
+    border-radius: 999px;
+
+    background: #3867f4;
+
+    transition:
+        width 0.5s ease;
+}
+
+
+
+/* =========================================
+   DDI CONTRIBUTION ANALYSIS
+========================================= */
+
+.ddi-contribution-insight {
+    padding: 15px;
+
+    margin-top: 5px;
+
+    border-radius: 14px;
+
+    background: #f5f7fb;
+}
+
+
+.ddi-contribution-insight > span {
+    display: block;
+
+    margin-bottom: 6px;
+
+    color: #3867f4;
+
+    font-size: 10px;
+
+    font-weight: 800;
+
+    letter-spacing: 1px;
+}
+
+
+.ddi-contribution-insight > strong {
+    display: block;
+
+    margin-bottom: 6px;
+
+    font-size: 14px;
+
+    color: #172033;
+}
+
+
+.ddi-contribution-insight > p {
+    margin: 0;
+
+    color: #718096;
+
+    font-size: 12px;
+
+    line-height: 1.55;
+}
+
+/* =========================================
+   DDI COMPARISON
+   같은 사용시간, 다른 디지털 이동
+========================================= */
+
+.ddi-compare-section {
+    padding: 20px;
+
+    margin-bottom: 18px;
+
+    border: 1px solid #e8ecf3;
+    border-radius: 20px;
+
+    background: #ffffff;
+}
+
+
+/* 제목 */
+
+.ddi-compare-section .section-header {
+    margin-bottom: 8px;
+}
+
+
+.ddi-compare-section .section-header h3 {
+    margin: 0;
+
+    font-size: 18px;
+
+    color: #172033;
+}
+
+
+.ddi-compare-description {
+    margin: 8px 0 20px;
+
+    color: #718096;
+
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+
+/* =========================================
+   USER A / USER B
+========================================= */
+
+.ddi-compare-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 10px;
+
+    position: relative;
+
+    margin-bottom: 16px;
+}
+
+
+/* VS 표시 */
+
+.ddi-compare-grid::after {
+    content: "VS";
+
+    position: absolute;
+
+    left: 50%;
+    top: 28px;
+
+    transform:
+        translate(-50%, -50%);
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 30px;
+    height: 30px;
+
+    border: 3px solid #ffffff;
+    border-radius: 50%;
+
+    background: #172033;
+
+    color: #ffffff;
+
+    font-size: 9px;
+    font-weight: 900;
+
+    letter-spacing: 0.5px;
+
+    z-index: 2;
+}
+
+
+/* =========================================
+   USER CARD
+========================================= */
+
+.ddi-user-card {
+    min-width: 0;
+
+    padding: 15px;
+
+    border: 1px solid #e8ecf3;
+    border-radius: 16px;
+
+    background: #f8f9fc;
+}
+
+
+/* 사용자 B 강조 */
+
+.ddi-user-card.featured {
+    border-color: #b9c7ff;
+
+    background:
+        linear-gradient(
+            145deg,
+            #f5f7ff,
+            #eef2ff
+        );
+}
+
+
+/* =========================================
+   CARD HEADER
+========================================= */
+
+.ddi-user-card-header {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 7px;
+
+    padding-bottom: 13px;
+
+    margin-bottom: 12px;
+
+    border-bottom: 1px solid #e3e8f0;
+}
+
+
+.ddi-user-type {
+    color: #718096;
+
+    font-size: 11px;
+    font-weight: 800;
+
+    letter-spacing: 0.3px;
+}
+
+
+/* DDI 숫자 */
+
+.ddi-user-card-header > strong {
+    font-size: 23px;
+    line-height: 1;
+
+    color: #172033;
+}
+
+
+/* 사용자 B DDI 강조 */
+
+.ddi-user-card.featured
+.ddi-user-card-header > strong {
+    color: #3867f4;
+}
+
+
+/* =========================================
+   T / N / C / R
+========================================= */
+
+.ddi-user-stats {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 9px;
+}
+
+
+.ddi-user-stats > div {
+    display: flex;
+
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 5px;
+}
+
+
+.ddi-user-stats span {
+    color: #8a94a6;
+
+    font-size: 10px;
+
+    white-space: nowrap;
+}
+
+
+.ddi-user-stats strong {
+    color: #172033;
+
+    font-size: 11px;
+
+    white-space: nowrap;
+}
+
+
+/* =========================================
+   ANALYSIS
+========================================= */
+
+.ddi-compare-result {
+    position: relative;
+
+    overflow: hidden;
+
+    padding: 17px;
+
+    border-radius: 16px;
+
+    background: #172033;
+
+    color: #ffffff;
+}
+
+
+/* 오른쪽 장식 */
+
+.ddi-compare-result::after {
+    content: "";
+
+    position: absolute;
+
+    width: 100px;
+    height: 100px;
+
+    right: -45px;
+    top: -50px;
+
+    border-radius: 50%;
+
+    background:
+        rgba(56, 103, 244, 0.28);
+}
+
+
+.ddi-compare-result-label {
+    display: block;
+
+    margin-bottom: 8px;
+
+    color: #8fa7ff;
+
+    font-size: 10px;
+    font-weight: 900;
+
+    letter-spacing: 1px;
+}
+
+
+.ddi-compare-result > strong {
+    position: relative;
+
+    display: block;
+
+    margin-bottom: 8px;
+
+    padding-right: 10px;
+
+    font-size: 15px;
+    line-height: 1.5;
+
+    z-index: 1;
+}
+
+
+.ddi-compare-result > p {
+    position: relative;
+
+    margin: 0;
+
+    color: #b8c2d3;
+
+    font-size: 12px;
+    line-height: 1.6;
+
+    z-index: 1;
+}
+
+
+/* =========================================
+   SMALL MOBILE
+========================================= */
+
+@media (max-width: 360px) {
+
+    .ddi-compare-section {
+        padding: 16px;
+    }
+
+
+    .ddi-user-card {
+        padding: 12px;
+    }
+
+
+    .ddi-user-card-header > strong {
+        font-size: 20px;
+    }
+
+
+    .ddi-user-stats span {
+        font-size: 9px;
+    }
+
+
+    .ddi-user-stats strong {
+        font-size: 10px;
+    }
+
+}
+
+/* =========================================
+   DIGITAL 3D CITY
+========================================= */
+
+.digital-city-card {
+    padding: 20px;
+
+    margin-bottom: 18px;
+
+    border: 1px solid #e8ecf3;
+
+    border-radius: 20px;
+
+    background: #ffffff;
+
+    overflow: hidden;
+}
+
+
+.digital-city-header h3 {
+    margin: 0;
+
+    font-size: 18px;
+
+    color: #172033;
+}
+
+
+.digital-city-description {
+    margin: 8px 0 16px;
+
+    color: #718096;
+
+    font-size: 13px;
+
+    line-height: 1.6;
+}
+
+
+
+/* =========================================
+   THREE.JS CANVAS
+========================================= */
+
+.digital-city-canvas {
+    width: 100%;
+
+    height: 420px;
+
+    overflow: hidden;
+
+    border-radius: 16px;
+
+    background: #02040a;
+
+    border: 1px solid #17213a;
+
+    box-shadow:
+        inset 0 0 40px rgba(45, 88, 255, 0.08);
+
+    touch-action: none;
+
+}
+
+
+.digital-city-canvas canvas {
+    display: block;
+
+    width: 100%;
+
+    height: 100%;
+}
+
+
+
+/* =========================================
+   CITY GUIDE
+========================================= */
+
+.digital-city-guide {
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 7px;
+
+    margin-top: 12px;
+}
+
+
+.digital-city-guide span {
+    padding: 6px 9px;
+
+    border-radius: 9px;
+
+    background: #f5f7fb;
+
+    color: #718096;
+
+    font-size: 10px;
+
+    font-weight: 600;
+}
+
+/* =========================================
+   DIGITAL CITY - FINAL NEON STYLE
+========================================= */
+
+.digital-city-canvas {
+    position: relative;
+
+    width: 100%;
+
+    height: 520px;
+
+    overflow: hidden;
+
+    border: 1px solid #15203b;
+
+    border-radius: 18px;
+
+    background: #010208;
+
+    box-shadow:
+        inset 0 0 40px rgba(30, 78, 200, 0.08);
+
+    touch-action: none;
+}
+
+
+.digital-city-canvas canvas {
+    display: block;
+
+    width: 100%;
+
+    height: 100%;
+}
+
+
+
+/* =========================================
+   APP LABEL
+========================================= */
+
+.city-app-label {
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    min-width: 70px;
+
+    transform:
+        translate(-50%, -50%);
+
+    color:
+        var(--app-neon-color);
+
+    font-family:
+        inherit;
+
+    text-align: center;
+
+    white-space: nowrap;
+
+    pointer-events: none;
+
+    user-select: none;
+
+    filter:
+        drop-shadow(
+            0 0 4px
+            var(--app-neon-color)
+        );
+}
+
+
+.city-app-label strong {
+    display: block;
+
+    font-size: 13px;
+
+    font-weight: 800;
+
+    line-height: 1.2;
+
+    text-shadow:
+        0 0 5px
+        var(--app-neon-color);
+}
+
+
+.city-app-label span {
+    display: block;
+
+    margin-top: 3px;
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    opacity: 0.9;
+
+    text-shadow:
+        0 0 4px
+        var(--app-neon-color);
+}
+
+/* =========================================
+   DIGITAL CITY LOOP LABEL
+========================================= */
+
+.city-loop-label {
+    padding: 5px 9px;
+
+    border: 1px solid
+        var(--loop-neon-color);
+
+    border-radius: 999px;
+
+    background:
+        rgba(4, 7, 16, 0.88);
+
+    color:
+        var(--loop-neon-color);
+
+    white-space: nowrap;
+
+    pointer-events: none;
+
+    user-select: none;
+
+    box-shadow:
+        0 0 10px
+        color-mix(
+            in srgb,
+            var(--loop-neon-color) 55%,
+            transparent
+        );
+}
+
+
+.city-loop-label strong {
+    font-size: 10px;
+
+    font-weight: 900;
+
+    letter-spacing: 0.3px;
+
+    text-shadow:
+        0 0 6px
+        var(--loop-neon-color);
+}
+
+/* =========================================
+   AI REPORT PAGE
+========================================= */
+
+
+/* =========================================
+   TODAY SUMMARY
+========================================= */
+
+.ai-report-summary-card {
+    padding: 20px;
+
+    margin-bottom: 16px;
+
+    border-radius: 22px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #172033,
+            #202d4b
+        );
+
+    color: #ffffff;
+
+    box-shadow:
+        0 12px 28px
+        rgba(23, 32, 51, 0.14);
+}
+
+
+.ai-report-summary-header {
+    display: flex;
+
+    justify-content: space-between;
+    align-items: flex-start;
+
+    gap: 16px;
+
+    margin-bottom: 20px;
+}
+
+
+.ai-report-summary-header h3 {
+    margin: 0;
+
+    font-size: 19px;
+
+    line-height: 1.35;
+}
+
+
+.ai-report-summary-card .section-label {
+    color: #9aa8bd;
+}
+
+
+/* DDI */
+
+.ai-report-ddi {
+    flex-shrink: 0;
+
+    text-align: right;
+}
+
+
+.ai-report-ddi span {
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: #9aa8bd;
+
+    font-size: 10px;
+    font-weight: 800;
+
+    letter-spacing: 1px;
+}
+
+
+.ai-report-ddi strong {
+    display: block;
+
+    color: #ffffff;
+
+    font-size: 23px;
+}
+
+
+/* =========================================
+   T / N / C / R
+========================================= */
+
+.ai-report-metric-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+    gap: 8px;
+}
+
+
+.ai-report-metric {
+    min-width: 0;
+
+    padding: 12px 7px;
+
+    border-radius: 14px;
+
+    background:
+        rgba(255, 255, 255, 0.08);
+
+    text-align: center;
+}
+
+
+.ai-report-metric-symbol {
+    display: block;
+
+    margin-bottom: 7px;
+
+    color: #8fa7ff;
+
+    font-size: 11px;
+    font-weight: 900;
+}
+
+
+.ai-report-metric strong {
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: #ffffff;
+
+    font-size: 14px;
+}
+
+
+.ai-report-metric p {
+    margin: 0;
+
+    color: #aeb9ca;
+
+    font-size: 9px;
+
+    white-space: nowrap;
+}
+
+
+/* =========================================
+   ANALYSIS CARD
+========================================= */
+
+.ai-analysis-card {
+    padding: 20px;
+
+    margin-bottom: 16px;
+
+    border: 1px solid #e8ecf3;
+    border-radius: 20px;
+
+    background: #ffffff;
+}
+
+
+.ai-analysis-card-header {
+    margin-bottom: 15px;
+}
+
+
+.ai-analysis-card-header h3 {
+    margin: 0;
+
+    color: #172033;
+
+    font-size: 18px;
+}
+
+
+/* =========================================
+   CORE ANALYSIS
+========================================= */
+
+.ai-analysis-highlight {
+    padding: 14px;
+
+    margin-bottom: 14px;
+
+    border-radius: 14px;
+
+    background: #f1f4ff;
+}
+
+
+.ai-analysis-highlight span {
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: #718096;
+
+    font-size: 10px;
+}
+
+
+.ai-analysis-highlight strong {
+    display: block;
+
+    color: #3867f4;
+
+    font-size: 16px;
+}
+
+
+.ai-analysis-text {
+    margin: 0;
+
+    color: #526074;
+
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+
+/* =========================================
+   BEHAVIOR PATTERN
+========================================= */
+
+.behavior-pattern-box {
+    padding: 16px;
+
+    margin-bottom: 12px;
+
+    border-radius: 16px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #f8f9ff,
+            #f0f3ff
+        );
+}
+
+
+.behavior-pattern-label {
+    display: block;
+
+    margin-bottom: 8px;
+
+    color: #3867f4;
+
+    font-size: 10px;
+    font-weight: 900;
+
+    letter-spacing: 0.8px;
+}
+
+
+.behavior-pattern-box strong {
+    display: block;
+
+    margin-bottom: 7px;
+
+    color: #172033;
+
+    font-size: 15px;
+}
+
+
+.behavior-pattern-box p {
+    margin: 0;
+
+    color: #718096;
+
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+
+/* 대표 이동 흐름 */
+
+.behavior-route-box {
+    padding: 14px;
+
+    border: 1px solid #e8ecf3;
+    border-radius: 14px;
+
+    background: #ffffff;
+}
+
+
+.behavior-route-box span {
+    display: block;
+
+    margin-bottom: 7px;
+
+    color: #8a94a6;
+
+    font-size: 10px;
+}
+
+
+.behavior-route-box strong {
+    display: block;
+
+    color: #172033;
+
+    font-size: 12px;
+    line-height: 1.6;
+
+    overflow-wrap: anywhere;
+}
+
+
+/* =========================================
+   COMPLEX TIME
+========================================= */
+
+.report-complex-time {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 10px;
+
+    margin-bottom: 14px;
+}
+
+
+.report-complex-time > div {
+    padding: 15px;
+
+    border-radius: 14px;
+
+    background: #f5f7fb;
+}
+
+
+.report-complex-time span {
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: #718096;
+
+    font-size: 10px;
+}
+
+
+.report-complex-time strong {
+    display: block;
+
+    color: #172033;
+
+    font-size: 17px;
+}
+
+
+/* =========================================
+   AI CHALLENGE
+========================================= */
+
+.ai-challenge-card {
+    position: relative;
+
+    overflow: hidden;
+
+    padding: 22px;
+
+    margin-bottom: 16px;
+
+    border-radius: 22px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #315eea,
+            #2449c8
+        );
+
+    color: #ffffff;
+
+    box-shadow:
+        0 12px 26px
+        rgba(56, 103, 244, 0.22);
+}
+
+
+.ai-challenge-card::after {
+    content: "";
+
+    position: absolute;
+
+    width: 150px;
+    height: 150px;
+
+    right: -70px;
+    top: -80px;
+
+    border-radius: 50%;
+
+    background:
+        rgba(255, 255, 255, 0.10);
+}
+
+
+.ai-challenge-badge {
+    position: relative;
+
+    display: inline-block;
+
+    padding: 6px 9px;
+
+    margin-bottom: 13px;
+
+    border-radius: 999px;
+
+    background:
+        rgba(255, 255, 255, 0.14);
+
+    color: #dbe4ff;
+
+    font-size: 9px;
+    font-weight: 900;
+
+    letter-spacing: 1px;
+
+    z-index: 1;
+}
+
+
+.ai-challenge-card h3 {
+    position: relative;
+
+    margin: 0 0 9px;
+
+    font-size: 19px;
+
+    z-index: 1;
+}
+
+
+.ai-challenge-card > p {
+    position: relative;
+
+    margin: 0 0 18px;
+
+    color: #dce4ff;
+
+    font-size: 13px;
+    line-height: 1.65;
+
+    z-index: 1;
+}
+
+
+.ai-challenge-target {
+    position: relative;
+
+    padding: 14px;
+
+    border-radius: 14px;
+
+    background:
+        rgba(255, 255, 255, 0.12);
+
+    z-index: 1;
+}
+
+
+.ai-challenge-target span {
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: #c9d5ff;
+
+    font-size: 9px;
+    font-weight: 900;
+
+    letter-spacing: 1px;
+}
+
+
+.ai-challenge-target strong {
+    display: block;
+
+    color: #ffffff;
+
+    font-size: 16px;
+}
+
+
+/* =========================================
+   REPORT BASIS
+========================================= */
+
+.report-basis-card {
+    display: grid;
+
+    grid-template-columns:
+        34px 1fr;
+
+    gap: 12px;
+
+    align-items: flex-start;
+
+    padding: 16px;
+
+    margin-bottom: 16px;
+
+    border: 1px solid #e8ecf3;
+    border-radius: 16px;
+
+    background: #f8f9fc;
+}
+
+
+.report-basis-icon {
+    width: 30px;
+    height: 30px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: #172033;
+
+    color: #ffffff;
+
+    font-size: 13px;
+    font-weight: 800;
+}
+
+
+.report-basis-card strong {
+    display: block;
+
+    margin-bottom: 6px;
+
+    color: #172033;
+
+    font-size: 13px;
+}
+
+
+.report-basis-card p {
+    margin: 0;
+
+    color: #718096;
+
+    font-size: 11px;
+    line-height: 1.6;
+}
+
+
+/* =========================================
+   WEEKLY / MONTHLY REPORT
+========================================= */
+
+.report-period-card {
+    padding: 18px;
+
+    margin-bottom: 14px;
+
+    border: 1px solid #e8ecf3;
+    border-radius: 18px;
+
+    background: #ffffff;
+}
+
+
+.report-period-header {
+    display: flex;
+
+    justify-content: space-between;
+    align-items: flex-start;
+
+    gap: 12px;
+
+    margin-bottom: 11px;
+}
+
+
+.report-period-header h3 {
+    margin: 0;
+
+    color: #172033;
+
+    font-size: 16px;
+}
+
+
+.report-status-badge {
+    flex-shrink: 0;
+
+    padding: 5px 8px;
+
+    border-radius: 999px;
+
+    background: #f1f4f9;
+
+    color: #718096;
+
+    font-size: 9px;
+    font-weight: 800;
+}
+
+
+.report-period-card > p {
+    margin: 0;
+
+    color: #718096;
+
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+
+/* =========================================
+   REPORT MOBILE
+========================================= */
+
+@media (max-width: 380px) {
+
+    .ai-report-summary-card {
+        padding: 17px;
+    }
+
+
+    .ai-report-summary-header {
+        gap: 10px;
+    }
+
+
+    .ai-report-summary-header h3 {
+        font-size: 17px;
+    }
+
+
+    .ai-report-ddi strong {
+        font-size: 20px;
+    }
+
+
+    .ai-report-metric-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+
+    .ai-report-metric {
+        padding: 11px 8px;
+    }
+
+}
+
+/* =========================================
+   WEEKLY / MONTHLY EXTREME VALUE 개선
+========================================= */
+
+.report-extreme-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 10px;
+
+    margin-top: 14px;
+    margin-bottom: 14px;
+}
+
+
+.report-extreme-item {
+    padding: 14px;
+
+    border: 1px solid #e8ecf3;
+    border-radius: 14px;
+
+    background: #f8f9fc;
+}
+
+
+/* 항목 제목 */
+
+.report-extreme-item > span {
+    display: block;
+
+    margin-bottom: 7px;
+
+    color: #718096;
+
+    font-size: 10px;
+    line-height: 1.4;
+}
+
+
+/* 화요일 / 수요일 / 1주차 / 3주차 */
+
+.report-extreme-item > strong {
+    display: block;
+
+    margin-bottom: 4px;
+
+    color: #172033;
+
+    font-size: 15px;
+    font-weight: 800;
+}
+
+
+/* 52.8 km / 38.6 km */
+
+.report-extreme-item > p {
+    margin: 0;
+
+    color: #3867f4;
+
+    font-size: 13px;
+    font-weight: 800;
+}
+
+
+/* 복잡했던 항목은 조금 더 강조 */
+
+.report-extreme-item:first-child {
+    background: #fff8f7;
+
+    border-color: #f1d9d7;
+}
+
+
+.report-extreme-item:first-child > p {
+    color: #d95c5c;
+}
+
+
+/* 안정적이었던 항목 */
+
+.report-extreme-item:last-child {
+    background: #f5f8ff;
+
+    border-color: #dce4ff;
+}
+
+
+/* 작은 화면 */
+
+@media (max-width: 360px) {
+
+    .report-extreme-grid {
+        grid-template-columns: 1fr;
+    }
+
+}
+/* =========================================
+   REPORT UX REFINEMENT · 2026-09-21
+   기능/ID는 그대로 두고 정보 우선순위만 재구성
+========================================= */
+
+#reportPage .page-header {
+    margin-bottom: 14px;
+}
+
+#reportPage .ai-report-summary-card {
+    margin-bottom: 14px;
+}
+
+.report-section-heading {
+    margin: 22px 2px 10px;
+}
+
+.report-section-heading span {
+    display: block;
+    margin-bottom: 4px;
+    color: #6f7f98;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 1.1px;
+}
+
+.report-section-heading strong {
+    display: block;
+    color: #172033;
+    font-size: 18px;
+    line-height: 1.35;
+}
+
+.report-section-heading p {
+    margin: 5px 0 0;
+    color: #7d899b;
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+.report-focus-grid,
+.report-insight-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    align-items: stretch;
+}
+
+.report-focus-grid > section,
+.report-insight-grid > section {
+    margin-bottom: 0;
+    height: 100%;
+}
+
+.report-challenge-priority {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(85, 110, 255, 0.30);
+    box-shadow: 0 16px 36px rgba(61, 84, 170, 0.14);
+}
+
+.report-challenge-priority::before {
+    content: "TODAY";
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    z-index: 2;
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: .8px;
+}
+
+.report-ai-primary-card {
+    border: 1px solid #e2e8f2;
+    background: linear-gradient(180deg, #ffffff 0%, #f8faff 100%);
+}
+
+.report-ai-detail-card {
+    margin-top: 12px;
+    border: 1px solid #e4e9f2;
+}
+
+.report-ai-detail-card .behavior-pattern-box + .behavior-pattern-box {
+    margin-top: 10px;
+}
+
+.report-basis-compact {
+    margin-top: 12px;
+    margin-bottom: 0;
+}
+
+.report-section-heading-period {
+    padding-top: 6px;
+    border-top: 1px solid #e8edf5;
+}
+
+.report-weekly-card,
+.report-monthly-card {
+    border: 1px solid #e5eaf2;
+    box-shadow: 0 8px 22px rgba(23, 32, 51, 0.06);
+}
+
+.report-weekly-card {
+    margin-top: 0;
+}
+
+#reportPage .report-period-card + .report-period-card {
+    margin-top: 14px;
+}
+
+#reportPage .ai-analysis-card,
+#reportPage .ai-challenge-card,
+#reportPage .report-period-card,
+#reportPage .report-basis-card {
+    scroll-margin-top: 18px;
+}
+
+@media (max-width: 720px) {
+    .report-focus-grid,
+    .report-insight-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .report-section-heading {
+        margin-top: 18px;
+    }
+
+    .report-section-heading strong {
+        font-size: 17px;
+    }
+
+    .report-challenge-priority {
+        order: 1;
+    }
+
+    .report-ai-primary-card {
+        order: 2;
+    }
+}
+
+/* =========================================
+   REPORT ROUTE READABILITY FIX
+========================================= */
+
+/* Echo Path 본문 폭에서는 행동 패턴 카드를 세로로 배치해
+   긴 앱 이동 경로가 눌리지 않도록 한다. */
+#reportPage .report-insight-grid {
+    grid-template-columns: 1fr;
+}
+
+#reportMainRoute,
+#reportComplexDescription {
+    overflow-wrap: anywhere;
+    word-break: keep-all;
+}
+
+#reportMainRoute {
+    display: block;
+    line-height: 1.55;
+}
+
+#reportComplexDescription {
+    margin-top: 14px;
+    line-height: 1.7;
+}
+
+#reportPage .report-complex-card,
+#reportPage .report-behavior-card {
+    min-width: 0;
+}
+
+/* =========================================
+   SETTINGS - ACCOUNT / LOGOUT POLISH
+========================================= */
+
+#settingsPage .account-email {
+    margin-top: 4px !important;
+    color: #3867f4 !important;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+#settingsPage .logout-button {
+    width: 100%;
+    min-height: 46px;
+    margin-top: 16px;
+    padding: 12px 16px;
+    border: 1px solid #ffd7d7;
+    border-radius: 14px;
+    background: #fff5f5;
+    color: #d84d55;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    transition:
+        background 0.18s ease,
+        border-color 0.18s ease,
+        transform 0.18s ease;
+}
+
+#settingsPage .logout-button:hover {
+    background: #ffeded;
+    border-color: #ffcaca;
+}
+
+#settingsPage .logout-button:active {
+    transform: scale(0.98);
+}
+
+#settingsPage .logout-button:focus-visible {
+    outline: 3px solid rgba(216, 77, 85, 0.18);
+    outline-offset: 2px;
+}
+
+/* =========================================
+   REPORT - SELF AWARENESS COMPARISON
+========================================= */
+
+#reportPage .report-section-heading-self {
+    margin-top: 26px;
+}
+
+.self-awareness-card {
+    margin-bottom: 18px;
+    padding: 20px;
+    border: 1px solid #e8ecf3;
+    border-radius: 20px;
+    background: #ffffff;
+}
+
+.self-awareness-header {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 10px;
+}
+
+.self-awareness-header h3 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.self-awareness-period-selector {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 7px;
+    padding: 4px;
+    border-radius: 12px;
+    background: #f4f6fa;
+}
+
+.self-awareness-period-button {
+    min-height: 36px;
+    padding: 7px 8px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: #718096;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.self-awareness-period-button.active {
+    background: #3867f4;
+    color: #ffffff;
+    box-shadow: 0 5px 14px rgba(56, 103, 244, 0.18);
+}
+
+.self-awareness-meta {
+    margin: 0 0 14px;
+    color: #718096;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.self-awareness-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+.self-awareness-item {
+    min-width: 0;
+    padding: 15px;
+    border: 1px solid #edf0f5;
+    border-radius: 15px;
+    background: #fbfcfe;
+}
+
+.self-awareness-item > span {
+    display: block;
+    margin-bottom: 11px;
+    color: #526074;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.self-awareness-values {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.self-awareness-values > div {
+    min-width: 0;
+    padding: 10px;
+    border-radius: 11px;
+    background: #ffffff;
+}
+
+.self-awareness-values small {
+    display: block;
+    margin-bottom: 5px;
+    color: #8a96a8;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.self-awareness-values strong {
+    display: block;
+    color: #172033;
+    font-size: 15px;
+    overflow-wrap: anywhere;
+}
+
+.self-awareness-item p {
+    margin: 10px 0 0;
+    color: #718096;
+    font-size: 11px;
+    line-height: 1.65;
+}
+
+.self-awareness-ddi-item {
+    background: #172033;
+    border-color: #172033;
+}
+
+.self-awareness-ddi-item > span,
+.self-awareness-ddi-item p {
+    color: #bdc7d7;
+}
+
+.self-awareness-ddi-value strong {
+    display: block;
+    color: #ffffff;
+    font-size: 24px;
+}
+
+.self-awareness-summary {
+    margin-top: 12px;
+    padding: 16px;
+    border-radius: 15px;
+    background: #f3f6ff;
+}
+
+.self-awareness-summary span {
+    display: block;
+    margin-bottom: 5px;
+    color: #3867f4;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.7px;
+}
+
+.self-awareness-summary strong {
+    display: block;
+    color: #172033;
+    font-size: 15px;
+}
+
+.self-awareness-summary p {
+    margin: 8px 0 0;
+    color: #526074;
+    font-size: 12px;
+    line-height: 1.7;
+}
+

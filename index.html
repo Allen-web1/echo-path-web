@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="Echo Path - 디지털 사용 습관 분석 플랫폼" name="description"/>
+<title>Echo Path</title>
+<link href="./css/style.css" rel="stylesheet"/>
+</head>
+<body>
+<!-- =========================
+         AUTH GATE
+    ========================== -->
+<section class="auth-gate" id="authGate">
+<div class="auth-card">
+<p class="brand-label">
+                DIGITAL WELLBEING
+            </p>
+<h1>
+                Echo Path
+            </h1>
+<p class="auth-description">
+                Echo Path 계정을 만들거나 로그인하세요.
+            </p>
+<div aria-label="로그인 및 회원가입" class="auth-mode-selector" role="tablist">
+<button class="auth-mode-button active" id="showLoginButton" type="button">
+                    로그인
+                </button>
+<button class="auth-mode-button" id="showSignupButton" type="button">
+                    회원가입
+                </button>
+</div>
+<form id="loginForm">
+<label class="auth-field" for="loginEmail">
+<span>
+                        이메일
+                    </span>
+<input autocomplete="username" id="loginEmail" required="" type="email"/>
+</label>
+<label class="auth-field" for="loginPassword">
+<span>
+                        비밀번호
+                    </span>
+<input autocomplete="current-password" id="loginPassword" required="" type="password"/>
+</label>
+<button class="auth-submit-button" id="loginButton" type="submit">
+                    로그인
+                </button>
+</form>
+<form hidden="" id="signupForm">
+<label class="auth-field" for="signupEmail">
+<span>
+                        이메일
+                    </span>
+<input autocomplete="email" id="signupEmail" required="" type="email"/>
+</label>
+<label class="auth-field" for="signupPassword">
+<span>
+                        비밀번호
+                    </span>
+<input autocomplete="new-password" id="signupPassword" minlength="6" required="" type="password"/>
+</label>
+<label class="auth-field" for="signupPasswordConfirm">
+<span>
+                        비밀번호 확인
+                    </span>
+<input autocomplete="new-password" id="signupPasswordConfirm" minlength="6" required="" type="password"/>
+</label>
+<button class="auth-submit-button" id="signupButton" type="submit">
+                    계정 만들기
+                </button>
+</form>
+<p aria-live="polite" class="auth-status" id="loginStatus"></p>
+</div>
+</section>
+<div hidden="" id="app">
+<!-- =========================
+             HEADER
+        ========================== -->
+<header class="app-header">
+<div>
+<p class="brand-label">
+                    DIGITAL WELLBEING
+                </p>
+<h1>
+                    Echo Path
+                </h1>
+</div>
+<button aria-label="사용자 메뉴" class="profile-button" id="profileButton" type="button">
+                EP
+            </button>
+</header>
+<!-- =========================
+             MAIN
+        ========================== -->
+<main class="app-main">
+<!-- =========================
+                 HOME PAGE
+            ========================== -->
+<section class="page active-page" id="homePage">
+<section class="hero-section">
+<p class="section-label">
+                        TODAY
+                    </p>
+<h2>
+                        오늘의 디지털 생활
+                    </h2>
+<p class="hero-description">
+                        스마트폰 사용 흐름과 디지털 이동 거리를 확인합니다.
+                    </p>
+</section>
+<!-- 오늘 요약 -->
+<section class="summary-grid">
+<article class="summary-card">
+<span class="summary-title">
+                            총 사용 시간
+                        </span>
+<strong class="summary-value" id="totalUsage">
+                            0h 00m
+                        </strong>
+</article>
+<article class="summary-card">
+<span class="summary-title">
+                            Digital Distance
+                        </span>
+<strong class="summary-value" id="ddiValue">
+                            0.0 km
+                        </strong>
+</article>
+</section>
+<!-- 디지털 지도 미리보기 -->
+<section class="map-preview-card">
+<div class="card-header">
+<div>
+<p class="section-label">
+                                DIGITAL MAP
+                            </p>
+<h3>
+                                디지털 활동 공간
+                            </h3>
+</div>
+<button class="text-button" data-page-target="mapPage" type="button">
+                            자세히
+                        </button>
+</div>
+<div class="map-placeholder">
+<div class="building building-study">
+<span>학습</span>
+</div>
+<div class="building building-media">
+<span>미디어</span>
+</div>
+<div class="building building-social">
+<span>소통</span>
+</div>
+<div class="building building-shopping">
+<span>쇼핑</span>
+</div>
+</div>
+</section>
+<!-- 핵심 기능 -->
+<section class="feature-section">
+<p class="section-label">
+                        ECHO PATH
+                    </p>
+<h3>
+                        핵심 분석
+                    </h3>
+<div class="feature-grid">
+<article class="feature-card">
+<span class="feature-number">
+                                01
+                            </span>
+<strong>
+                                Digital Distance
+                            </strong>
+<p>
+                                T·N·C·R 데이터를 이용해
+                                디지털 이동 거리를 계산합니다.
+                            </p>
+</article>
+<article class="feature-card">
+<span class="feature-number">
+                                02
+                            </span>
+<strong>
+                                3D Digital Map
+                            </strong>
+<p>
+                                앱 사용시간과 이동 흐름을
+                                도시 형태로 시각화합니다.
+                            </p>
+</article>
+<article class="feature-card">
+<span class="feature-number">
+                                03
+                            </span>
+<strong>
+                                Habit Analysis
+                            </strong>
+<p>
+                                앱 전환과 반복적인
+                                사용 패턴을 분석합니다.
+                            </p>
+</article>
+<article class="feature-card">
+<span class="feature-number">
+                                04
+                            </span>
+<strong>
+                                AI Report
+                            </strong>
+<p>
+                                사용 패턴을 분석하여
+                                맞춤형 개선 방향을 제공합니다.
+                            </p>
+</article>
+</div>
+</section>
+</section>
+<!-- =========================
+                 STATISTICS PAGE
+            ========================== -->
+<section class="page" id="statsPage">
+<section class="page-header">
+<p class="section-label">
+            STATISTICS
+        </p>
+<h2>
+            사용 통계
+        </h2>
+<p>
+            일간·주간·월간 사용량과
+            디지털 행동 패턴을 분석합니다.
+        </p>
+</section>
+<!-- =========================
+         일간 / 주간 / 월간 분석
+    ========================== -->
+<section class="chart-card">
+<div class="chart-card-header">
+<div>
+<p class="section-label">
+                    USAGE OVERVIEW
+                </p>
+<h3>
+                    카테고리별 사용 시간
+                </h3>
+</div>
+</div>
+<!-- 기간 선택 버튼 -->
+<div aria-label="통계 기간 선택" class="period-selector">
+<button class="period-button active" data-period="daily" type="button">
+                일간
+            </button>
+<button class="period-button" data-period="weekly" type="button">
+                주간
+            </button>
+<button class="period-button" data-period="monthly" type="button">
+                월간
+            </button>
+</div>
+<div class="period-summary">
+<span id="periodLabel">
+                오늘
+            </span>
+<strong id="periodTotalUsage">
+                0h 00m
+            </strong>
+</div>
+<div class="chart-container">
+<canvas aria-label="기간별 카테고리 사용시간" id="periodUsageChart"></canvas>
+</div>
+</section>
+<!-- =========================
+         앱별 사용시간
+    ========================== -->
+<section class="chart-card">
+<div class="chart-card-header">
+<div>
+<p class="section-label">
+                    APP USAGE
+                </p>
+<h3>
+                    오늘 앱별 사용 시간
+                </h3>
+</div>
+</div>
+<div class="chart-container">
+<canvas aria-label="앱별 사용시간 그래프" id="appUsageChart"></canvas>
+</div>
+</section>
+<!-- =========================
+         생산 / 오락 비율
+    ========================== -->
+<section class="chart-card">
+<div class="chart-card-header">
+<div>
+<p class="section-label">
+                    ACTIVITY BALANCE
+                </p>
+<h3>
+                    생산적 활동 / 오락 활동
+                </h3>
+</div>
+</div>
+<div class="chart-container doughnut-container">
+<canvas aria-label="생산적 활동과 오락 활동 비율" id="activityBalanceChart"></canvas>
+</div>
+<div class="activity-summary">
+<div>
+<span>
+                    생산적 활동
+                </span>
+<strong id="productiveTime">
+                    0m
+                </strong>
+</div>
+<div>
+<span>
+                    오락 활동
+                </span>
+<strong id="entertainmentTime">
+                    0m
+                </strong>
+</div>
+</div>
+</section>
+<!-- =========================
+         시간대별 히트맵
+    ========================== -->
+<section class="chart-card">
+<div class="chart-card-header">
+<div>
+<p class="section-label">
+                    WEEKLY HEATMAP
+                </p>
+<h3>
+                    시간대별 사용 활성도
+                </h3>
+</div>
+</div>
+<p class="heatmap-description">
+            색이 진할수록 해당 시간대에
+            스마트폰 사용이 많았음을 의미합니다.
+        </p>
+<div class="heatmap-scroll">
+<div class="usage-heatmap" id="usageHeatmap"></div>
+</div>
+<div class="heatmap-legend">
+<span>
+                적음
+            </span>
+<div class="legend-cell level-0"></div>
+<div class="legend-cell level-1"></div>
+<div class="legend-cell level-2"></div>
+<div class="legend-cell level-3"></div>
+<div class="legend-cell level-4"></div>
+<span>
+                많음
+            </span>
+</div>
+<!-- =========================
+     DDI 행동 복잡도 히트맵
+========================== -->
+<section class="chart-card">
+<div class="chart-card-header">
+<div>
+<p class="section-label">
+                DDI HEATMAP
+            </p>
+<h3>
+                시간대별 디지털 이동 복잡도
+            </h3>
+</div>
+</div>
+<p class="heatmap-description">
+        스마트폰 사용시간이 아니라 앱 전환,
+        카테고리 이동 및 반복 루프가 집중된
+        시간대를 보여줍니다.
+    </p>
+<div class="ddi-heatmap-info">
+<strong>
+            사용량과 행동 복잡도는 다를 수 있습니다.
+        </strong>
+<p>
+            짧게 사용했더라도 여러 앱을 반복적으로
+            이동했다면 DDI 활성도가 높게 표시됩니다.
+        </p>
+</div>
+<div class="heatmap-scroll">
+<div class="usage-heatmap" id="ddiHeatmap"></div>
+</div>
+<div class="heatmap-legend">
+<span>
+            안정
+        </span>
+<div class="legend-cell ddi-level-0"></div>
+<div class="legend-cell ddi-level-1"></div>
+<div class="legend-cell ddi-level-2"></div>
+<div class="legend-cell ddi-level-3"></div>
+<div class="legend-cell ddi-level-4"></div>
+<span>
+            복잡
+        </span>
+</div>
+</section>
+<!-- =========================
+     DDI 복잡 시간 TOP 3
+========================== -->
+<section class="chart-card">
+<div class="chart-card-header">
+<div>
+<p class="section-label">
+                DDI COMPLEXITY
+            </p>
+<h3>
+                오늘 가장 복잡했던 시간
+            </h3>
+</div>
+</div>
+<p class="heatmap-description">
+        앱 전환, 카테고리 이동 및 반복 루프를
+        종합하여 DDI가 높았던 시간대를 보여줍니다.
+    </p>
+<div class="ddi-top-times" id="ddiTopTimes">
+<!-- JavaScript에서 자동 생성 -->
+</div>
+</section>
+</section>
+<!-- =========================
+         앱 이동 타임라인
+    ========================== -->
+<section class="timeline-card">
+<div class="chart-card-header">
+<div>
+<p class="section-label">
+                    DIGITAL FLOW
+                </p>
+<h3>
+                    앱 이동 타임라인
+                </h3>
+</div>
+</div>
+<div class="usage-timeline" id="usageTimeline">
+</div>
+</section>
+</section>
+<!-- =========================
+                 DDI + DIGITAL MAP PAGE
+            ========================== -->
+<section class="page" id="mapPage">
+<section class="page-header">
+<p class="section-label">
+                        DIGITAL DISTANCE
+                    </p>
+<h2>
+                        디지털 이동 거리
+                    </h2>
+<p>
+                        디지털 공간에서의 이동량과
+                        스마트폰 사용 흐름을 분석합니다.
+                    </p>
+</section>
+<!-- DDI 결과 -->
+<section class="ddi-main-card">
+<span class="ddi-label">
+                        TODAY DDI
+                    </span>
+<strong class="ddi-main-value" id="mainDdiValue">
+                        0.0 km
+                    </strong>
+<p>
+                        D = 5T + 0.2N + 1.0C + 2.0R
+                    </p>
+</section>
+<!-- DDI 변수 -->
+<section class="ddi-variable-grid">
+<article class="ddi-variable-card">
+<span>
+                            T
+                        </span>
+<strong id="tValue">
+                            0.0 h
+                        </strong>
+<p>
+                            총 사용 시간
+                        </p>
+</article>
+<article class="ddi-variable-card">
+<span>
+                            N
+                        </span>
+<strong id="nValue">
+                            0
+                        </strong>
+<p>
+                            앱 전환
+                        </p>
+</article>
+<article class="ddi-variable-card">
+<span>
+                            C
+                        </span>
+<strong id="cValue">
+                            0
+                        </strong>
+<p>
+                            카테고리 전환
+                        </p>
+</article>
+<article class="ddi-variable-card">
+<span>
+                            R
+                        </span>
+<strong id="rValue">
+                            0
+                        </strong>
+<p>
+                            반복 순환
+                        </p>
+</article>
+</section>
+<!-- =========================
+     DDI CONTRIBUTION
+========================== -->
+<section class="ddi-contribution-card">
+<div class="ddi-contribution-header">
+<div>
+<p class="section-label">
+                DDI CONTRIBUTION
+            </p>
+<h3>
+                DDI 기여도 분석
+            </h3>
+</div>
+</div>
+<p class="ddi-contribution-description">
+        오늘의 디지털 이동 거리가
+        어떤 행동 요인에 의해 만들어졌는지 보여줍니다.
+    </p>
+<!-- T -->
+<div class="contribution-item">
+<div class="contribution-title-row">
+<div>
+<strong>
+                    T · 사용시간
+                </strong>
+<span>
+                    1시간당 5.0 km
+                </span>
+</div>
+<div class="contribution-value">
+<strong id="tContributionValue">
+                    0.0 km
+                </strong>
+<span id="tContributionPercent">
+                    0.0%
+                </span>
+</div>
+</div>
+<div class="contribution-track">
+<div class="contribution-bar" id="tContributionBar"></div>
+</div>
+</div>
+<!-- N -->
+<div class="contribution-item">
+<div class="contribution-title-row">
+<div>
+<strong>
+                    N · 앱 전환
+                </strong>
+<span>
+                    1회당 0.2 km
+                </span>
+</div>
+<div class="contribution-value">
+<strong id="nContributionValue">
+                    0.0 km
+                </strong>
+<span id="nContributionPercent">
+                    0.0%
+                </span>
+</div>
+</div>
+<div class="contribution-track">
+<div class="contribution-bar" id="nContributionBar"></div>
+</div>
+</div>
+<!-- C -->
+<div class="contribution-item">
+<div class="contribution-title-row">
+<div>
+<strong>
+                    C · 카테고리 전환
+                </strong>
+<span>
+                    1회당 1.0 km
+                </span>
+</div>
+<div class="contribution-value">
+<strong id="cContributionValue">
+                    0.0 km
+                </strong>
+<span id="cContributionPercent">
+                    0.0%
+                </span>
+</div>
+</div>
+<div class="contribution-track">
+<div class="contribution-bar" id="cContributionBar"></div>
+</div>
+</div>
+<!-- R -->
+<div class="contribution-item">
+<div class="contribution-title-row">
+<div>
+<strong>
+                    R · 반복 순환
+                </strong>
+<span>
+                    1회당 2.0 km
+                </span>
+</div>
+<div class="contribution-value">
+<strong id="rContributionValue">
+                    0.0 km
+                </strong>
+<span id="rContributionPercent">
+                    0.0%
+                </span>
+</div>
+</div>
+<div class="contribution-track">
+<div class="contribution-bar" id="rContributionBar"></div>
+</div>
+</div>
+<!-- 자동 해석 -->
+<div class="ddi-contribution-insight">
+<span>
+            ANALYSIS
+        </span>
+<strong id="ddiContributionInsight">
+            DDI 분석 중
+        </strong>
+<p id="ddiContributionDescription">
+            데이터를 분석하고 있습니다.
+        </p>
+</div>
+</section>
+<!-- =====================================================
+     CHALLENGE BEFORE / AFTER COMPARISON
+===================================================== -->
+<section class="ddi-compare-section">
+<div class="section-header">
+<div>
+<p class="section-label">
+                CHALLENGE EFFECT
+            </p>
+<h3>
+                Challenge 전·후 행동 변화 비교
+            </h3>
+</div>
+</div>
+<p class="ddi-compare-description">
+        AI Challenge 수행 전과 후의
+        T·N·C·R 및 DDI 변화를 비교하여
+        디지털 사용 습관의 변화를 확인합니다.
+    </p>
+<div class="ddi-compare-grid">
+<!-- Challenge 전 -->
+<article class="ddi-user-card">
+<div class="ddi-user-card-header">
+<span class="ddi-user-type">
+                    Challenge 전 나
+                </span>
+<strong id="compareUserADdi">
+                    -
+                </strong>
+</div>
+<div class="ddi-user-stats">
+<div>
+<span>사용시간 T</span>
+<strong id="compareUserAT">-</strong>
+</div>
+<div>
+<span>앱 전환 N</span>
+<strong id="compareUserAN">-</strong>
+</div>
+<div>
+<span>카테고리 전환 C</span>
+<strong id="compareUserAC">-</strong>
+</div>
+<div>
+<span>반복 루프 R</span>
+<strong id="compareUserAR">-</strong>
+</div>
+</div>
+</article>
+<!-- Challenge 후 -->
+<article class="ddi-user-card featured">
+<div class="ddi-user-card-header">
+<span class="ddi-user-type">
+                    Challenge 후 나
+                </span>
+<strong id="compareUserBDdi">
+                    -
+                </strong>
+</div>
+<div class="ddi-user-stats">
+<div>
+<span>사용시간 T</span>
+<strong id="compareUserBT">-</strong>
+</div>
+<div>
+<span>앱 전환 N</span>
+<strong id="compareUserBN">-</strong>
+</div>
+<div>
+<span>카테고리 전환 C</span>
+<strong id="compareUserBC">-</strong>
+</div>
+<div>
+<span>반복 루프 R</span>
+<strong id="compareUserBR">-</strong>
+</div>
+</div>
+</article>
+</div>
+<div class="ddi-compare-result">
+<span class="ddi-compare-result-label">
+            CHALLENGE RESULT
+        </span>
+<strong id="compareDdiDifference">
+            Challenge 수행 후 비교할 수 있습니다.
+        </strong>
+<p id="compareDdiExplanation">
+            Challenge 전·후의 실제 스마트폰 행동 데이터가
+            충분히 수집되면 DDI 변화량과 변화율을 표시합니다.
+        </p>
+</div>
+</section>
+<!-- 3D 지도 -->
+<section class="map-preview-card">
+<div class="card-header">
+<div>
+<p class="section-label">
+                                3D MAP
+                            </p>
+<h3>
+                                디지털 활동 공간
+                            </h3>
+</div>
+</div>
+<div class="map-placeholder">
+<div class="building building-study">
+<span>학습</span>
+</div>
+<div class="building building-media">
+<span>미디어</span>
+</div>
+<div class="building building-social">
+<span>소통</span>
+</div>
+<div class="building building-shopping">
+<span>쇼핑</span>
+</div>
+</div>
+</section>
+<!-- 습관 진단 -->
+<section class="placeholder-panel">
+<h3>
+                        DDI 기반 디지털 습관 진단
+                    </h3>
+<p>
+                        앱 전환, 카테고리 이동,
+                        반복 루프의 발생 시간과 빈도를 분석합니다.
+                    </p>
+</section>
+</section>
+<!-- =========================
+     REPORT PAGE
+========================== -->
+<section class="page" id="reportPage">
+<!-- =========================
+         REPORT HEADER
+    ========================== -->
+<section class="page-header">
+<p class="section-label">
+            AI REPORT
+        </p>
+<h2>
+            디지털 건강 AI 리포트
+        </h2>
+<p>
+            측정된 디지털 행동 데이터를 바탕으로
+            사용 패턴과 개선 방향을 분석합니다.
+        </p>
+</section>
+<!-- =========================
+         TODAY SUMMARY
+    ========================== -->
+<section class="ai-report-summary-card report-summary-priority">
+<div class="ai-report-summary-header">
+<div>
+<p class="section-label">
+                    TODAY SUMMARY
+                </p>
+<h3>
+                    오늘의 디지털 행동 요약
+                </h3>
+</div>
+<div class="ai-report-ddi">
+<span>
+                    DDI
+                </span>
+<strong id="reportDdiValue">
+                    0.0 km
+                </strong>
+</div>
+</div>
+<div class="ai-report-metric-grid">
+<article class="ai-report-metric">
+<span class="ai-report-metric-symbol">
+                    T
+                </span>
+<strong id="reportTValue">
+                    0.0 h
+                </strong>
+<p>
+                    사용시간
+                </p>
+</article>
+<article class="ai-report-metric">
+<span class="ai-report-metric-symbol">
+                    N
+                </span>
+<strong id="reportNValue">
+                    0
+                </strong>
+<p>
+                    앱 전환
+                </p>
+</article>
+<article class="ai-report-metric">
+<span class="ai-report-metric-symbol">
+                    C
+                </span>
+<strong id="reportCValue">
+                    0
+                </strong>
+<p>
+                    카테고리 전환
+                </p>
+</article>
+<article class="ai-report-metric">
+<span class="ai-report-metric-symbol">
+                    R
+                </span>
+<strong id="reportRValue">
+                    0
+                </strong>
+<p>
+                    반복 루프
+                </p>
+</article>
+</div>
+</section><div class="report-section-heading report-section-heading-focus"><span>TODAY FOCUS</span><strong>오늘 가장 먼저 볼 것</strong><p>AI 분석 핵심과 오늘의 Challenge를 먼저 확인하세요.</p></div><div class="report-focus-grid"><section class="ai-challenge-card report-challenge-priority">
+<div class="ai-challenge-badge">
+            AI CHALLENGE
+        </div>
+<h3 id="reportChallengeTitle">
+            오늘의 디지털 습관 챌린지
+        </h3>
+<p id="reportChallengeDescription">
+            사용 패턴을 바탕으로 실천 가능한 목표를 생성합니다.
+        </p>
+<div class="ai-challenge-target">
+<span>GOAL</span>
+<strong id="reportChallengeGoal">분석 중</strong>
+</div>
+<div class="behavior-route-box">
+<span>수행일</span>
+<strong id="reportChallengeDate">-</strong>
+</div>
+<div class="behavior-route-box">
+<span>현재 기준값</span>
+<strong id="reportChallengeBaseline">-</strong>
+</div>
+<div class="behavior-route-box">
+<span>상태</span>
+<strong id="reportChallengeStatus">-</strong>
+</div>
+</section><section class="ai-analysis-card report-ai-primary-card">
+<div class="ai-analysis-card-header">
+<div>
+<p class="section-label">
+                    CORE ANALYSIS
+                </p>
+<h3>
+                    핵심 분석
+                </h3>
+</div>
+</div>
+<div class="ai-analysis-highlight">
+<span>
+                주요 DDI 요인
+            </span>
+<strong id="reportMainFactor">
+                분석 중
+            </strong>
+</div>
+<p class="ai-analysis-text" id="reportCoreAnalysis">
+            디지털 행동 데이터를 분석하고 있습니다.
+        </p>
+</section></div><section class="ai-analysis-card report-ai-detail-card">
+<div class="ai-analysis-card-header">
+<div>
+<p class="section-label">AI ANALYSIS</p>
+<h3>AI 분석 결과</h3>
+</div>
+</div>
+<div class="behavior-route-box">
+<span>분석 기준</span>
+<strong id="reportAiAnalysisMeta">-</strong>
+</div>
+<div class="behavior-pattern-box">
+<span class="behavior-pattern-label">LEARNING DIRECTION</span>
+<strong>학습 방향</strong>
+<p id="reportLearningDirection">AI 분석 결과를 불러오고 있습니다.</p>
+</div>
+<div class="behavior-pattern-box">
+<span class="behavior-pattern-label">ACTION PLAN</span>
+<strong>실행 가능한 해결 방법</strong>
+<p id="reportSolutionSuggestions">AI 분석 결과를 불러오고 있습니다.</p>
+</div>
+</section>
+<div class="report-section-heading report-section-heading-self">
+    <span>SELF AWARENESS</span>
+    <strong>자기인식 vs 실제 데이터</strong>
+    <p>내가 생각한 스마트폰 사용 습관과 실제 측정된 행동을 비교합니다.</p>
+</div>
+
+<section class="self-awareness-card">
+    <div class="self-awareness-header">
+        <div>
+            <p class="section-label">PERCEPTION CHECK</p>
+            <h3>내 인식과 실제 행동 비교</h3>
+        </div>
+
+        <div class="self-awareness-period-selector" aria-label="자기인식 비교 기간">
+            <button type="button" class="self-awareness-period-button active" data-self-period="daily">일간</button>
+            <button type="button" class="self-awareness-period-button" data-self-period="weekly">주간</button>
+            <button type="button" class="self-awareness-period-button" data-self-period="monthly">월간</button>
+        </div>
+    </div>
+
+    <p class="self-awareness-meta" id="selfAwarenessMeta">
+        자기인식 설문과 실제 데이터를 불러오고 있습니다.
+    </p>
+
+    <div class="self-awareness-grid">
+        <article class="self-awareness-item">
+            <span>하루 스마트폰 사용시간</span>
+            <div class="self-awareness-values">
+                <div><small>내 예상</small><strong id="selfEstimatedUsage">-</strong></div>
+                <div><small>실제 측정</small><strong id="selfActualUsage">-</strong></div>
+            </div>
+            <p id="selfUsageInsight">-</p>
+        </article>
+
+        <article class="self-awareness-item">
+            <span>앱 전환 습관</span>
+            <div class="self-awareness-values">
+                <div><small>자기평가</small><strong id="selfSwitchScore">-</strong></div>
+                <div><small>실제 측정</small><strong id="selfActualSwitches">-</strong></div>
+            </div>
+            <p>자기평가 점수와 실제 앱 전환 횟수를 함께 확인합니다.</p>
+        </article>
+
+        <article class="self-awareness-item">
+            <span>습관적 재확인</span>
+            <div class="self-awareness-values">
+                <div><small>자기평가</small><strong id="selfCheckingScore">-</strong></div>
+                <div><small>실제 반복 루프</small><strong id="selfActualLoops">-</strong></div>
+            </div>
+            <p id="selfLoopInsight">-</p>
+        </article>
+
+        <article class="self-awareness-item">
+            <span>학습 목적 사용 비율</span>
+            <div class="self-awareness-values">
+                <div><small>내 예상</small><strong id="selfLearningExpected">-</strong></div>
+                <div><small>실제 측정</small><strong id="selfLearningActual">-</strong></div>
+            </div>
+            <p id="selfLearningInsight">-</p>
+        </article>
+
+        <article class="self-awareness-item">
+            <span>오락 목적 사용 비율</span>
+            <div class="self-awareness-values">
+                <div><small>내 예상</small><strong id="selfEntertainmentExpected">-</strong></div>
+                <div><small>실제 측정</small><strong id="selfEntertainmentActual">-</strong></div>
+            </div>
+            <p id="selfEntertainmentInsight">-</p>
+        </article>
+
+        <article class="self-awareness-item self-awareness-ddi-item">
+            <span>평균 DDI</span>
+            <div class="self-awareness-ddi-value">
+                <strong id="selfAwarenessDdi">-</strong>
+            </div>
+            <p>DDI는 사용시간, 앱 전환, 카테고리 전환, 반복 루프를 함께 반영한 행동 지표입니다.</p>
+        </article>
+    </div>
+
+    <div class="self-awareness-summary">
+        <span>COMPARISON INSIGHT</span>
+        <strong>비교 해석</strong>
+        <p id="selfAwarenessSummary">
+            자기인식 설문과 실제 측정값을 비교하고 있습니다.
+        </p>
+    </div>
+</section>
+
+<div class="report-section-heading"><span>BEHAVIOR INSIGHTS</span><strong>행동 패턴 상세</strong><p>반복되는 앱 이동과 복잡도가 높았던 시간을 함께 확인합니다.</p></div><div class="report-insight-grid"><section class="ai-analysis-card report-behavior-card">
+<div class="ai-analysis-card-header">
+<div>
+<p class="section-label">
+                    BEHAVIOR PATTERN
+                </p>
+<h3>
+                    관찰된 행동 패턴
+                </h3>
+</div>
+</div>
+<div class="behavior-pattern-box">
+<span class="behavior-pattern-label">
+                PATTERN
+            </span>
+<strong id="reportPatternTitle">
+                행동 패턴 분석 중
+            </strong>
+<p id="reportPatternDescription">
+                앱 이동과 반복 행동 데이터를 확인하고 있습니다.
+            </p>
+</div>
+<div class="behavior-route-box">
+<span>
+                대표 이동 흐름
+            </span>
+<strong id="reportMainRoute">
+                -
+            </strong>
+</div>
+</section><section class="ai-analysis-card report-complex-card">
+<div class="ai-analysis-card-header">
+<div>
+<p class="section-label">
+                    COMPLEX TIME
+                </p>
+<h3>
+                    가장 복잡했던 시간
+                </h3>
+</div>
+</div>
+<div class="report-complex-time">
+<div>
+<span>
+                    시간대
+                </span>
+<strong id="reportComplexTime">
+                    -
+                </strong>
+</div>
+<div>
+<span>
+                    DDI
+                </span>
+<strong id="reportComplexDdi">
+                    -
+                </strong>
+</div>
+</div>
+<p class="ai-analysis-text" id="reportComplexDescription">
+            시간대별 DDI 데이터를 분석하고 있습니다.
+        </p>
+</section></div><section class="report-basis-card report-basis-compact">
+<span class="report-basis-icon">
+            i
+        </span>
+<div>
+<strong>
+                이 리포트는 어떻게 만들어지나요?
+            </strong>
+<p>
+                Echo Path가 T·N·C·R 및 DDI를 먼저 계산하고,
+                측정된 행동 패턴을 바탕으로 분석과 개선 방향을 제공합니다.
+            </p>
+</div>
+</section><div class="report-section-heading report-section-heading-period"><span>PERIOD REPORTS</span><strong>주간 · 월간 변화</strong><p>하루가 아니라 시간의 흐름에서 디지털 사용 습관이 어떻게 변하는지 확인합니다.</p></div><section class="report-period-card report-weekly-card">
+<div class="report-period-header">
+<div>
+<p class="section-label">
+                WEEKLY REPORT
+            </p>
+<h3>
+                주간 디지털 리포트
+            </h3>
+</div>
+<span class="report-status-badge" id="weeklyChangeBadge">
+            계산 중
+        </span>
+</div>
+<div class="report-period-summary-grid">
+<div class="report-period-summary-item">
+<span>
+                이번 주 평균 DDI
+            </span>
+<strong id="weeklyAverageDdi">
+                -
+            </strong>
+</div>
+<div class="report-period-summary-item">
+<span>
+                평균 사용시간
+            </span>
+<strong id="weeklyAverageUsage">
+                -
+            </strong>
+</div>
+</div>
+<!-- =========================
+         WEEKLY DDI TREND
+    ========================== -->
+<div class="report-trend-section">
+<div class="report-trend-header">
+<div>
+<span class="report-trend-label">
+                    DDI TREND
+                </span>
+<strong>
+                    이번 주 DDI 변화
+                </strong>
+</div>
+<span class="report-trend-unit">
+                km
+            </span>
+</div>
+<div class="report-trend-chart">
+<canvas aria-label="이번 주 요일별 DDI 변화 그래프" id="weeklyDdiTrendChart"></canvas>
+</div>
+<p class="report-trend-insight" id="weeklyDdiTrendInsight">
+            요일별 DDI 변화를 분석하고 있습니다.
+        </p>
+</div>
+<div class="report-extreme-grid">
+<div class="report-extreme-item">
+<span>
+                가장 복잡했던 요일
+            </span>
+<strong id="weeklyMostComplexDay">
+                -
+            </strong>
+<p id="weeklyMostComplexDdi">
+                -
+            </p>
+</div>
+<div class="report-extreme-item">
+<span>
+                가장 안정적이었던 요일
+            </span>
+<strong id="weeklyMostStableDay">
+                -
+            </strong>
+<p id="weeklyMostStableDdi">
+                -
+            </p>
+</div>
+</div>
+<p class="report-period-insight" id="weeklyReportInsight">
+        주간 데이터를 분석하고 있습니다.
+    </p>
+</section><section class="report-period-card report-monthly-card">
+<div class="report-period-header">
+<div>
+<p class="section-label">
+                MONTHLY REPORT
+            </p>
+<h3>
+                월간 디지털 리포트
+            </h3>
+</div>
+<span class="report-status-badge" id="monthlyChangeBadge">
+            계산 중
+        </span>
+</div>
+<!-- =========================
+         MONTHLY SUMMARY
+    ========================== -->
+<div class="report-period-summary-grid">
+<div class="report-period-summary-item">
+<span>
+                이번 달 평균 DDI
+            </span>
+<strong id="monthlyAverageDdi">
+                -
+            </strong>
+</div>
+<div class="report-period-summary-item">
+<span>
+                평균 사용시간
+            </span>
+<strong id="monthlyAverageUsage">
+                -
+            </strong>
+</div>
+</div>
+<!-- =========================
+         MONTHLY DDI TREND
+    ========================== -->
+<div class="report-trend-section">
+<div class="report-trend-header">
+<div>
+<span class="report-trend-label">
+                    DDI TREND
+                </span>
+<strong>
+                    이번 달 DDI 변화
+                </strong>
+</div>
+<span class="report-trend-unit">
+                km
+            </span>
+</div>
+<div class="report-trend-chart">
+<canvas aria-label="이번 달 주차별 DDI 변화 그래프" id="monthlyDdiTrendChart"></canvas>
+</div>
+<p class="report-trend-insight" id="monthlyDdiTrendInsight">
+            주차별 DDI 변화를 분석하고 있습니다.
+        </p>
+</div>
+<!-- =========================
+         MONTHLY EXTREMES
+    ========================== -->
+<div class="report-extreme-grid">
+<div class="report-extreme-item">
+<span>
+                가장 복잡했던 주
+            </span>
+<strong id="monthlyMostComplexWeek">
+                -
+            </strong>
+<p id="monthlyMostComplexDdi">
+                -
+            </p>
+</div>
+<div class="report-extreme-item">
+<span>
+                가장 안정적이었던 주
+            </span>
+<strong id="monthlyMostStableWeek">
+                -
+            </strong>
+<p id="monthlyMostStableDdi">
+                -
+            </p>
+</div>
+</div>
+<p class="report-period-insight" id="monthlyReportInsight">
+        월간 데이터를 분석하고 있습니다.
+    </p>
+</section>
+<!-- =========================
+         CORE ANALYSIS
+    ========================== -->
+
+<!-- =========================
+         AI ANALYSIS DETAIL
+    ========================== -->
+
+<!-- =========================
+         BEHAVIOR PATTERN
+    ========================== -->
+
+<!-- =========================
+         COMPLEX TIME
+    ========================== -->
+
+<!-- =========================
+         AI CHALLENGE
+    ========================== -->
+
+<!-- =========================
+         REPORT BASIS
+    ========================== -->
+
+<!-- =========================
+     WEEKLY REPORT
+========================== -->
+
+<!-- =========================
+     MONTHLY REPORT
+========================== -->
+
+</section>
+<!-- =========================
+                 SETTINGS PAGE
+            ========================== -->
+<section class="page" id="settingsPage">
+<section class="page-header">
+<p class="section-label">
+                        SETTINGS
+                    </p>
+<h2>
+                        설정
+                    </h2>
+<p>
+                        사용자 설정과 앱 카테고리를 관리합니다.
+                    </p>
+</section>
+<section class="settings-card">
+<div>
+<strong>
+                            앱 카테고리 설정
+                        </strong>
+<p>
+                            학습·업무·소통·미디어·쇼핑 등
+                            앱의 활동 영역을 설정합니다.
+                        </p>
+</div>
+</section>
+<section class="settings-card">
+<div>
+<strong>
+                            개인정보 및 데이터
+                        </strong>
+<p>
+                            저장되는 디지털 이용 데이터와
+                            개인정보 보호 설정을 관리합니다.
+                        </p>
+</div>
+</section>
+<section class="settings-card">
+<div>
+<strong>
+                            계정
+                        </strong>
+<p>
+                            현재 로그인된 계정
+                        </p>
+<p class="account-email" id="currentAccountEmail">
+                            로그인 계정 확인 중...
+                        </p>
+<button class="logout-button" id="logoutButton" type="button">
+                            로그아웃
+                        </button>
+</div>
+</section>
+</section>
+</main>
+<!-- =========================
+             BOTTOM NAVIGATION
+        ========================== -->
+<nav aria-label="주 메뉴" class="bottom-nav">
+<button class="nav-button active" data-page-target="homePage" type="button">
+<span class="nav-icon">
+                    ⌂
+                </span>
+<span>
+                    홈
+                </span>
+</button>
+<button class="nav-button" data-page-target="statsPage" type="button">
+<span class="nav-icon">
+                    ▥
+                </span>
+<span>
+                    통계
+                </span>
+</button>
+<button class="nav-button map-nav-button" data-page-target="mapPage" type="button">
+<span class="nav-main-icon">
+                    ➤
+                </span>
+<span>
+                    DDI
+                </span>
+</button>
+<button class="nav-button" data-page-target="reportPage" type="button">
+<span class="nav-icon">
+                    ▤
+                </span>
+<span>
+                    리포트
+                </span>
+</button>
+<button class="nav-button" data-page-target="settingsPage" type="button">
+<span class="nav-icon">
+                    ⚙
+                </span>
+<span>
+                    설정
+                </span>
+</button>
+</nav>
+</div>
+<!-- =========================
+         JAVASCRIPT
+    ========================== -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- =========================
+     THREE.JS IMPORT MAP
+========================== -->
+<script type="importmap">
+{
+    "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+    }
+}
+</script>
+<script src="./js/app.js" type="module"></script>
+</body>
+</html>
