@@ -136,7 +136,7 @@ export function renderDigitalCity(
             id="cityModeDescription"
             class="digital-city-description"
         >
-            앱 사용시간이 길수록 건물이 높아집니다.
+            앱 사용시간이 길수록 건물이 높아집니다. 오늘 가장 오래 사용한 앱을 기준으로 상대 높이가 계산됩니다.
         </p>
 
 
@@ -783,6 +783,45 @@ export function renderDigitalCity(
         );
 
 
+    /*
+        사용시간 T → 건물 높이
+
+        기존 방식(app.usageMinutes / 16)은 약 25분 이하 앱들이
+        최소 높이 1.6에 묶여 서로 다른 사용시간도 같은 높이로 보였습니다.
+
+        이제 오늘 가장 오래 사용한 앱을 기준(100%)으로 두고,
+        각 앱의 사용시간 비율에 따라 1.6 ~ 9.0 범위에서 높이를 계산합니다.
+        sqrt 스케일을 사용해 짧게 사용한 앱도 높이 차이가 눈에 보이도록 합니다.
+    */
+
+    const maxUsageMinutes =
+        Math.max(
+
+            ...apps.map(
+                app =>
+                    Math.max(
+                        0,
+                        Number(
+                            app.usageMinutes
+                            ?? 0
+                        )
+                        || 0
+                    )
+            ),
+
+            1
+
+        );
+
+
+    const minBuildingHeight =
+        1.6;
+
+
+    const maxBuildingHeight =
+        9.0;
+
+
     /* =====================================================
        15. GROUP
     ===================================================== */
@@ -991,16 +1030,55 @@ export function renderDigitalCity(
                 spacing;
 
 
-            const buildingHeight =
+            const usageMinutes =
                 Math.max(
 
-                    1.6,
+                    0,
 
-                    app.usageMinutes
-                    /
-                    16
+                    Number(
+                        app.usageMinutes
+                        ?? 0
+                    )
+                    || 0
 
                 );
+
+
+            const usageRatio =
+                Math.min(
+
+                    1,
+
+                    usageMinutes
+                    /
+                    maxUsageMinutes
+
+                );
+
+
+            const buildingHeight =
+
+                usageMinutes > 0
+
+                    ? (
+                        minBuildingHeight
+
+                        +
+
+                        Math.sqrt(
+                            usageRatio
+                        )
+
+                        *
+
+                        (
+                            maxBuildingHeight
+                            -
+                            minBuildingHeight
+                        )
+                    )
+
+                    : minBuildingHeight;
 
 
             const buildingWidth =
@@ -3852,7 +3930,7 @@ export function renderDigitalCity(
 
 
             modeDescription.textContent =
-                "앱 사용시간이 길수록 건물이 높아집니다.";
+                "앱 사용시간이 길수록 건물이 높아집니다. 오늘 가장 오래 사용한 앱을 기준으로 상대 높이가 계산됩니다.";
 
 
             renderUsageInfo();
@@ -4006,7 +4084,7 @@ export function renderDigitalCity(
 
                 <p>
                     ${top.usageMinutes}분 사용했습니다.
-                    건물 높이는 사용시간을 기준으로 만들어집니다.
+                    건물 높이는 오늘 가장 오래 사용한 앱 대비 사용시간 비율을 기준으로 만들어집니다.
                 </p>
 
             </div>
