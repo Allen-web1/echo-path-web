@@ -937,6 +937,16 @@ function buildHourlyTimeline(hourlyRows, hourlyAppRows, dailyAppRows, today) {
 
     const appLookup = new Map();
 
+    /*
+        hourly_app_usage와 daily_app_usage에 실제로 존재하는 앱만
+        타임라인 후보로 인정한다.
+
+        UsageEvents에는 키보드, 설정 패널, 시스템 서비스 등도
+        ACTIVITY_RESUMED 이벤트로 섞일 수 있다. 이 값들을 그대로
+        route에 그리면 com.samsung..., com.android... 같은 패키지명이
+        수십 개 노출될 수 있으므로 실제 사용량 행과 매칭되지 않는
+        항목은 화면 타임라인에서 제외한다.
+    */
     todayApps.forEach((item) => {
         const hour = Number(item.hour);
         const appName = item.app_name || item.package_name;
@@ -945,7 +955,20 @@ function buildHourlyTimeline(hourlyRows, hourlyAppRows, dailyAppRows, today) {
         appLookup.set(`${hour}|||${item.package_name}`, item);
     });
 
-    const timeline = [];
+    const dailyLookup = new Map();
+
+    (dailyAppRows ?? [])
+        .filter((item) => item.record_date === today)
+        .forEach((item) => {
+            if (item.package_name) {
+                dailyLookup.set(item.package_name, item);
+            }
+            if (item.app_name) {
+                dailyLookup.set(item.app_name, item);
+            }
+        });
+
+    const rawTimeline = [];
 
     todayMetrics.forEach((metric) => {
         const hour = Number(metric.hour ?? 0);
@@ -974,13 +997,13 @@ function buildHourlyTimeline(hourlyRows, hourlyAppRows, dailyAppRows, today) {
 
         routeEntries.forEach((entry) => {
             const rawApp = String(entry.app ?? "").trim();
+            if (!rawApp) return;
+
             const appName =
                 resolveRouteAppName(
                     rawApp,
                     appNameLookup
                 );
-
-            if (!appName) return;
 
             const appRow =
                 appLookup.get(`${hour}|||${rawApp}`)
@@ -993,30 +1016,105 @@ function buildHourlyTimeline(hourlyRows, hourlyAppRows, dailyAppRows, today) {
                             || item.app_name === appName
                             || resolveRouteAppName(item.package_name, appNameLookup) === appName
                         )
-                );
+                )
+                ?? dailyLookup.get(rawApp)
+                ?? dailyLookup.get(appName)
+                ?? null;
 
-            const exactDurationMs =
-                Number(entry.durationMs);
+            /*
+                실제 앱 사용량 표에 없는 패키지는 시스템 이벤트일 가능성이 높다.
+                타임라인 시각화에서는 제외한다.
+            */
+            if (!appRow) return;
 
-            const durationMinutes =
+            const exactDurationMs = Number(entry.durationMs);
+            const hasExactDuration =
                 Number.isFinite(exactDurationMs)
-                && exactDurationMs > 0
-                    ? msToMinutes(exactDurationMs)
-                    : msToMinutes(appRow?.usage_ms ?? 0);
+                && exactDurationMs > 0;
 
-            timeline.push({
+            const durationMs =
+                hasExactDuration
+                    ? exactDurationMs
+                    : Number(appRow?.usage_ms ?? 0);
+
+            if (!Number.isFinite(durationMs) || durationMs <= 0) return;
+
+            const startTimestamp = Number(entry.startTimestamp);
+            const hasStartTimestamp =
+                Number.isFinite(startTimestamp)
+                && startTimestamp > 0;
+
+            rawTimeline.push({
                 time: formatTimelineClock(
-                    entry.startTimestamp,
+                    hasStartTimestamp ? startTimestamp : null,
                     hour
                 ),
-                app: appName,
+                app: appRow?.app_name || appName,
+                packageName: appRow?.package_name || rawApp,
                 category: appRow?.category || "기타",
-                durationMinutes
+                durationMinutes: msToMinutes(durationMs),
+                startTimestamp:
+                    hasStartTimestamp
+                        ? startTimestamp
+                        : null,
+                durationMs,
+                hasExactDuration
             });
         });
     });
 
-    return timeline;
+    /*
+        같은 실제 앱이 시스템 오버레이 때문에 여러 조각으로 끊긴 경우
+        2분 이내의 연속 세션은 하나로 합친다.
+
+        예: 네이버 8분 → 시스템 패널 3초 → 네이버 12분
+        화면에는 네이버 약 20분으로 표시한다.
+    */
+    const mergedTimeline = [];
+
+    rawTimeline.forEach((item) => {
+        const previous = mergedTimeline[mergedTimeline.length - 1];
+
+        const sameApp =
+            previous
+            && previous.packageName === item.packageName;
+
+        const previousEnd =
+            previous?.startTimestamp != null
+                ? previous.startTimestamp + previous.durationMs
+                : null;
+
+        const gapMs =
+            previousEnd != null
+            && item.startTimestamp != null
+                ? item.startTimestamp - previousEnd
+                : null;
+
+        const closeEnough =
+            gapMs != null
+            && gapMs >= 0
+            && gapMs <= 120000;
+
+        if (
+            sameApp
+            && previous.hasExactDuration
+            && item.hasExactDuration
+            && closeEnough
+        ) {
+            previous.durationMs += item.durationMs;
+            previous.durationMinutes = msToMinutes(previous.durationMs);
+            return;
+        }
+
+        mergedTimeline.push({ ...item });
+    });
+
+    return mergedTimeline.map((item) => ({
+        time: item.time,
+        app: item.app,
+        category: item.category,
+        durationMinutes: item.durationMinutes
+    }));
 }
 
 /* =========================================
