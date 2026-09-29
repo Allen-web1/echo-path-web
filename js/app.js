@@ -3004,6 +3004,149 @@ function hasCompleteSelfAwarenessAiInterpretation(
 }
 
 
+
+/* =========================================
+   AI 입력 데이터 fingerprint
+
+   - 입력 데이터가 같으면 저장된 Gemini 결과 재사용
+   - 입력 데이터가 달라지면 새 Gemini 분석 실행
+========================================= */
+
+function stableStringifyReportAiInput(
+    value
+) {
+
+    if (
+        value === null
+        ||
+        typeof value !== "object"
+    ) {
+
+        return JSON.stringify(
+            value
+        );
+
+    }
+
+
+    if (
+        Array.isArray(
+            value
+        )
+    ) {
+
+        return (
+            "["
+            +
+            value
+                .map(
+                    (item) =>
+                        stableStringifyReportAiInput(
+                            item
+                        )
+                )
+                .join(
+                    ","
+                )
+            +
+            "]"
+        );
+
+    }
+
+
+    const keys =
+        Object.keys(
+            value
+        )
+            .sort();
+
+
+    return (
+        "{"
+        +
+        keys
+            .map(
+                (key) =>
+                    (
+                        JSON.stringify(
+                            key
+                        )
+                        +
+                        ":"
+                        +
+                        stableStringifyReportAiInput(
+                            value[
+                                key
+                            ]
+                        )
+                    )
+            )
+            .join(
+                ","
+            )
+        +
+        "}"
+    );
+
+}
+
+
+function createReportAiInputFingerprint(
+    value
+) {
+
+    const source =
+        stableStringifyReportAiInput(
+            value
+        );
+
+
+    let hash =
+        2166136261;
+
+
+    for (
+        let index = 0;
+        index < source.length;
+        index += 1
+    ) {
+
+        hash ^=
+            source.charCodeAt(
+                index
+            );
+
+
+        hash =
+            Math.imul(
+                hash,
+                16777619
+            );
+
+    }
+
+
+    return (
+        "fnv1a32:"
+        +
+        (
+            hash
+            >>>
+            0
+        )
+            .toString(
+                16
+            )
+            .padStart(
+                8,
+                "0"
+            )
+    );
+
+}
+
+
 /* =========================================
    오늘 AI 분석 입력 행 준비
 ========================================= */
@@ -3048,6 +3191,30 @@ async function ensureDailyReportAiInput() {
 
     const analysisDate =
         getReportAnalysisDate();
+
+
+    /*
+        AI 분석 버튼을 누른 바로 그 시점의 최신 데이터를 만든다.
+        이전 Gemini 분석 때의 데이터와 fingerprint가 같을 때만
+        저장된 AI 결과를 재사용한다.
+    */
+
+    const inputSnapshot =
+        buildReportAiInputSnapshot();
+
+
+    const currentInputFingerprint =
+        createReportAiInputFingerprint(
+            inputSnapshot
+        );
+
+
+    const perceptionGapText =
+        inputSnapshot
+            ?.perception_gap
+            ?.summary
+        ??
+        "자기인식 비교 데이터 준비 완료";
 
 
     const {
@@ -3113,7 +3280,29 @@ async function ensureDailyReportAiInput() {
         ?? null;
 
 
-    const hasV2Cache =
+    const analyzedInputFingerprint =
+        typeof envelope
+            ?.analyzed_input_fingerprint
+        ===
+        "string"
+            ? envelope
+                .analyzed_input_fingerprint
+            : null;
+
+
+    const hasSameInput =
+        Boolean(
+            analyzedInputFingerprint
+        )
+        &&
+        analyzedInputFingerprint
+        ===
+        currentInputFingerprint;
+
+
+    const hasReusableCache =
+        hasSameInput
+        &&
         Boolean(
             existing
                 ?.analyzed_at
@@ -3145,7 +3334,7 @@ async function ensureDailyReportAiInput() {
 
 
     if (
-        hasV2Cache
+        hasReusableCache
     ) {
 
         return {
@@ -3153,22 +3342,47 @@ async function ensureDailyReportAiInput() {
             analysisId:
                 existing.id,
             cached:
-                true
+                true,
+            dataChanged:
+                false,
+            inputFingerprint:
+                currentInputFingerprint
         };
 
     }
 
 
-    const inputSnapshot =
-        buildReportAiInputSnapshot();
+    /*
+        데이터가 달라졌다면 최신 input_snapshot을 저장한다.
 
+        analyzed_input_fingerprint는 마지막 실제 Gemini 분석 때의
+        fingerprint를 그대로 보존한다. Edge Function은
+        current fingerprint와 analyzed fingerprint가 다르면
+        Gemini를 새로 호출한다.
+    */
 
-    const perceptionGapText =
-        inputSnapshot
-            ?.perception_gap
-            ?.summary
-        ??
-        "자기인식 비교 데이터 준비 완료";
+    const nextEnvelope = {
+
+        __echo_path_ai_version:
+            3,
+
+        base_summary:
+            perceptionGapText,
+
+        input_fingerprint:
+            currentInputFingerprint,
+
+        analyzed_input_fingerprint:
+            analyzedInputFingerprint,
+
+        self_awareness_interpretation:
+            hasCompleteSelfAwarenessAiInterpretation(
+                cachedInterpretation
+            )
+                ? cachedInterpretation
+                : null
+
+    };
 
 
     if (
@@ -3188,10 +3402,12 @@ async function ensureDailyReportAiInput() {
                         inputSnapshot,
 
                     perception_gap:
-                        perceptionGapText,
+                        JSON.stringify(
+                            nextEnvelope
+                        ),
 
                     analysis_version:
-                        2
+                        3
 
                 })
                 .eq(
@@ -3214,7 +3430,11 @@ async function ensureDailyReportAiInput() {
             analysisId:
                 existing.id,
             cached:
-                false
+                false,
+            dataChanged:
+                true,
+            inputFingerprint:
+                currentInputFingerprint
         };
 
     }
@@ -3243,10 +3463,12 @@ async function ensureDailyReportAiInput() {
                     inputSnapshot,
 
                 perception_gap:
-                    perceptionGapText,
+                    JSON.stringify(
+                        nextEnvelope
+                    ),
 
                 analysis_version:
-                    2
+                    3
 
             })
             .select(
@@ -3274,7 +3496,11 @@ async function ensureDailyReportAiInput() {
                 ?.id
             ?? null,
         cached:
-            false
+            false,
+        dataChanged:
+            true,
+        inputFingerprint:
+            currentInputFingerprint
     };
 
 }
@@ -3883,8 +4109,12 @@ async function runReportAiAnalysis() {
 
             message:
                 inputInfo.cached
-                    ? "오늘 저장된 Gemini 분석 결과를 확인하고 있습니다."
-                    : "Gemini가 오늘의 사용 습관과 자기인식 차이를 분석하고 있습니다."
+                    ? "데이터 변화가 없어 저장된 Gemini 분석 결과를 불러오고 있습니다."
+                    : (
+                        inputInfo.dataChanged
+                            ? "바뀐 데이터를 감지했습니다. Gemini가 최신 상태를 다시 분석하고 있습니다."
+                            : "Gemini가 오늘의 사용 습관과 자기인식 차이를 분석하고 있습니다."
+                    )
         });
 
 
@@ -3986,8 +4216,8 @@ async function runReportAiAnalysis() {
 
             message:
                 data.cached
-                    ? "오늘의 저장된 Gemini 분석 결과를 불러왔습니다."
-                    : "오늘의 Gemini AI 분석이 완료되었습니다."
+                    ? "데이터 변화가 없어 기존 Gemini 분석 결과를 그대로 사용했습니다."
+                    : "최신 데이터 기준으로 Gemini AI 분석을 새로 완료했습니다."
         });
 
     }
