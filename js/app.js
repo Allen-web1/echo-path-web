@@ -3493,18 +3493,45 @@ function renderRealtimeCoreUi() {
 
 
     /*
-        디지털 활동 도시가 이미 열려 있으면
-        최신 앱/이동/루프 데이터로 다시 생성한다.
+    디지털 활동 도시가 이미 열려 있으면
+    최신 앱/이동/루프 데이터로 다시 생성한다.
+
+    Realtime 갱신 전 사용자가 보고 있던 모드를 기억했다가
+    도시를 다시 만든 뒤 같은 모드로 복원한다.
     */
+
+    const currentCityMode =
+        document.querySelector(
+            ".city-mode-button.active"
+        )
+            ?.dataset
+            ?.cityMode
+        ?? "usage";
+
 
     if (
         document.querySelector(
             "#digitalCitySection"
         )
     ) {
+
         renderDigitalCity(
             usageData
         );
+
+
+        const restoreModeButton =
+            document.querySelector(
+                `.city-mode-button[data-city-mode="${currentCityMode}"]`
+            );
+
+
+        if (restoreModeButton) {
+
+            restoreModeButton.click();
+
+        }
+
     }
 }
 
