@@ -1983,6 +1983,21 @@ function renderSelfAwarenessComparison(
                 " "
             );
     }
+
+
+    if (
+        reportAiUnlocked
+    ) {
+
+        applyReportSelfAwarenessAiText();
+
+    }
+
+    else {
+
+        maskSelfAwarenessAiInterpretation();
+
+    }
 }
 
 
@@ -2000,6 +2015,2020 @@ selfAwarenessPeriodButtons.forEach(
         );
     }
 );
+
+
+
+/* =========================================
+   REPORT AI BUTTON CONTROL
+   - 사용자가 "AI 분석"을 눌렀을 때만 Gemini 실행
+   - 핵심 분석 / Challenge / 행동 습관 / 자기인식 비교 해석을
+     모두 같은 AI 분석 결과에서 표시
+========================================= */
+
+let reportAiUnlocked =
+    false;
+
+let reportAiBusy =
+    false;
+
+let reportAiButton =
+    null;
+
+let reportAiStatusElement =
+    null;
+
+let reportSelfAwarenessAiInterpretation =
+    null;
+
+
+/* =========================================
+   날짜 / 숫자 보정
+========================================= */
+
+function getReportAnalysisDate() {
+
+    const usageDate =
+        String(
+            usageData?.date
+            ?? ""
+        ).trim();
+
+
+    if (
+        /^\d{4}-\d{2}-\d{2}$/.test(
+            usageDate
+        )
+    ) {
+
+        return usageDate;
+
+    }
+
+
+    const now =
+        new Date();
+
+
+    const year =
+        now.getFullYear();
+
+    const month =
+        String(
+            now.getMonth() + 1
+        ).padStart(
+            2,
+            "0"
+        );
+
+    const day =
+        String(
+            now.getDate()
+        ).padStart(
+            2,
+            "0"
+        );
+
+
+    return `${year}-${month}-${day}`;
+
+}
+
+
+function safeReportNumber(
+    value,
+    fallback = 0
+) {
+
+    const number =
+        Number(
+            value
+        );
+
+
+    return Number.isFinite(
+        number
+    )
+        ? number
+        : fallback;
+
+}
+
+
+/* =========================================
+   카테고리 비율
+========================================= */
+
+function getReportCategoryRatios() {
+
+    const categories =
+        usageData
+            ?.periodUsage
+            ?.daily
+            ?.categories
+        ?? {};
+
+
+    const entries =
+        Object.entries(
+            categories
+        )
+            .map(
+                ([category, minutes]) => ({
+                    category,
+
+                    minutes:
+                        Math.max(
+                            0,
+                            safeReportNumber(
+                                minutes
+                            )
+                        )
+                })
+            );
+
+
+    const totalMinutes =
+        entries.reduce(
+            (
+                sum,
+                item
+            ) =>
+                sum
+                +
+                item.minutes,
+            0
+        );
+
+
+    if (
+        totalMinutes <= 0
+    ) {
+
+        return {
+            learningRatio:
+                null,
+
+            entertainmentRatio:
+                null
+        };
+
+    }
+
+
+    const learningMinutes =
+        entries
+            .filter(
+                (item) =>
+                    item.category
+                    ===
+                    "학습"
+            )
+            .reduce(
+                (
+                    sum,
+                    item
+                ) =>
+                    sum
+                    +
+                    item.minutes,
+                0
+            );
+
+
+    const entertainmentCategories =
+        new Set([
+            "SNS",
+            "미디어",
+            "게임"
+        ]);
+
+
+    const entertainmentMinutes =
+        entries
+            .filter(
+                (item) =>
+                    entertainmentCategories.has(
+                        item.category
+                    )
+            )
+            .reduce(
+                (
+                    sum,
+                    item
+                ) =>
+                    sum
+                    +
+                    item.minutes,
+                0
+            );
+
+
+    return {
+
+        learningRatio:
+            Number(
+                (
+                    learningMinutes
+                    /
+                    totalMinutes
+                    *
+                    100
+                ).toFixed(
+                    1
+                )
+            ),
+
+        entertainmentRatio:
+            Number(
+                (
+                    entertainmentMinutes
+                    /
+                    totalMinutes
+                    *
+                    100
+                ).toFixed(
+                    1
+                )
+            )
+
+    };
+
+}
+
+
+/* =========================================
+   자기인식 비교 데이터 -> Gemini 입력
+   일간 / 주간 / 월간 모두 함께 전달
+========================================= */
+
+function buildSelfAwarenessInputSnapshot() {
+
+    const root =
+        usageData
+            ?.selfAwarenessComparison
+        ?? {};
+
+
+    function normalizePeriod(
+        period
+    ) {
+
+        const data =
+            root?.[
+                period
+            ]
+            ?? null;
+
+
+        if (
+            !data
+        ) {
+
+            return null;
+
+        }
+
+
+        return {
+
+            label:
+                data.label
+                ?? period,
+
+            measurement_days:
+                safeReportNumber(
+                    data.measurementDays
+                ),
+
+            estimated_daily_minutes:
+                safeReportNumber(
+                    data.estimatedDailyMinutes
+                ),
+
+            actual_daily_minutes:
+                safeReportNumber(
+                    data.actualDailyMinutes
+                ),
+
+            switching_self_score:
+                safeReportNumber(
+                    data.switchingSelfScore
+                ),
+
+            actual_switch_count:
+                safeReportNumber(
+                    data.actualSwitchCount
+                ),
+
+            habitual_checking_self_score:
+                safeReportNumber(
+                    data.habitualCheckingSelfScore
+                ),
+
+            actual_repeat_loops:
+                safeReportNumber(
+                    data.actualRepeatLoops
+                ),
+
+            perceived_learning_ratio:
+                safeReportNumber(
+                    data.perceivedLearningRatio
+                ),
+
+            actual_learning_ratio:
+                data.actualLearningRatio
+                === null
+                ||
+                data.actualLearningRatio
+                === undefined
+                    ? null
+                    : safeReportNumber(
+                        data.actualLearningRatio
+                    ),
+
+            perceived_entertainment_ratio:
+                safeReportNumber(
+                    data.perceivedEntertainmentRatio
+                ),
+
+            actual_entertainment_ratio:
+                data.actualEntertainmentRatio
+                === null
+                ||
+                data.actualEntertainmentRatio
+                === undefined
+                    ? null
+                    : safeReportNumber(
+                        data.actualEntertainmentRatio
+                    ),
+
+            ddi:
+                safeReportNumber(
+                    data.ddi
+                )
+
+        };
+
+    }
+
+
+    return {
+
+        has_assessment:
+            Boolean(
+                root
+                    ?.hasAssessment
+            ),
+
+        daily:
+            normalizePeriod(
+                "daily"
+            ),
+
+        weekly:
+            normalizePeriod(
+                "weekly"
+            ),
+
+        monthly:
+            normalizePeriod(
+                "monthly"
+            )
+
+    };
+
+}
+
+
+/* =========================================
+   perception gap
+========================================= */
+
+function buildReportPerceptionGapSnapshot() {
+
+    const daily =
+        usageData
+            ?.selfAwarenessComparison
+            ?.daily
+        ?? null;
+
+
+    if (
+        !daily
+    ) {
+
+        return {
+
+            usage_minutes_gap:
+                null,
+
+            learning_ratio_gap:
+                null,
+
+            entertainment_ratio_gap:
+                null,
+
+            summary:
+                "자기인식 사전 설문 또는 실제 측정 데이터가 충분하지 않음"
+
+        };
+
+    }
+
+
+    const usageGap =
+        safeReportNumber(
+            daily.actualDailyMinutes
+        )
+        -
+        safeReportNumber(
+            daily.estimatedDailyMinutes
+        );
+
+
+    const learningGap =
+        daily.actualLearningRatio
+        === null
+        ||
+        daily.actualLearningRatio
+        === undefined
+            ? null
+            : (
+                safeReportNumber(
+                    daily.actualLearningRatio
+                )
+                -
+                safeReportNumber(
+                    daily.perceivedLearningRatio
+                )
+            );
+
+
+    const entertainmentGap =
+        daily.actualEntertainmentRatio
+        === null
+        ||
+        daily.actualEntertainmentRatio
+        === undefined
+            ? null
+            : (
+                safeReportNumber(
+                    daily.actualEntertainmentRatio
+                )
+                -
+                safeReportNumber(
+                    daily.perceivedEntertainmentRatio
+                )
+            );
+
+
+    const parts =
+        [];
+
+
+    if (
+        usageGap > 30
+    ) {
+
+        parts.push(
+            "실제 하루 평균 사용시간이 예상보다 많음"
+        );
+
+    }
+
+    else if (
+        usageGap < -30
+    ) {
+
+        parts.push(
+            "실제 하루 평균 사용시간이 예상보다 적음"
+        );
+
+    }
+
+    else {
+
+        parts.push(
+            "예상 사용시간과 실제 사용시간이 비슷함"
+        );
+
+    }
+
+
+    if (
+        learningGap !== null
+    ) {
+
+        if (
+            learningGap > 10
+        ) {
+
+            parts.push(
+                "실제 학습 사용 비율이 예상보다 높음"
+            );
+
+        }
+
+        else if (
+            learningGap < -10
+        ) {
+
+            parts.push(
+                "실제 학습 사용 비율이 예상보다 낮음"
+            );
+
+        }
+
+        else {
+
+            parts.push(
+                "학습 사용 비율에 대한 자기인식과 실제 값이 비슷함"
+            );
+
+        }
+
+    }
+
+
+    if (
+        entertainmentGap !== null
+    ) {
+
+        if (
+            entertainmentGap > 10
+        ) {
+
+            parts.push(
+                "실제 오락 사용 비율이 예상보다 높음"
+            );
+
+        }
+
+        else if (
+            entertainmentGap < -10
+        ) {
+
+            parts.push(
+                "실제 오락 사용 비율이 예상보다 낮음"
+            );
+
+        }
+
+        else {
+
+            parts.push(
+                "오락 사용 비율에 대한 자기인식과 실제 값이 비슷함"
+            );
+
+        }
+
+    }
+
+
+    return {
+
+        usage_minutes_gap:
+            Number(
+                usageGap.toFixed(
+                    1
+                )
+            ),
+
+        learning_ratio_gap:
+            learningGap
+            === null
+                ? null
+                : Number(
+                    learningGap.toFixed(
+                        1
+                    )
+                ),
+
+        entertainment_ratio_gap:
+            entertainmentGap
+            === null
+                ? null
+                : Number(
+                    entertainmentGap.toFixed(
+                        1
+                    )
+                ),
+
+        summary:
+            parts.join(
+                ", "
+            )
+
+    };
+
+}
+
+
+/* =========================================
+   Gemini 입력 스냅샷
+========================================= */
+
+function buildReportAiInputSnapshot() {
+
+    const analysisDate =
+        getReportAnalysisDate();
+
+
+    const {
+        learningRatio,
+        entertainmentRatio
+    } =
+        getReportCategoryRatios();
+
+
+    const perceptionGap =
+        buildReportPerceptionGapSnapshot();
+
+
+    const totalUsageMinutes =
+        Math.max(
+            0,
+            safeReportNumber(
+                usageData
+                    ?.totalUsageHours
+            )
+            *
+            60
+        );
+
+
+    const dailySelf =
+        usageData
+            ?.selfAwarenessComparison
+            ?.daily
+        ?? null;
+
+
+    return {
+
+        period_type:
+            "daily",
+
+        measurement_days:
+            Math.max(
+                1,
+                safeReportNumber(
+                    dailySelf
+                        ?.measurementDays,
+                    1
+                )
+            ),
+
+        measurement_start:
+            analysisDate,
+
+        measurement_end:
+            analysisDate,
+
+
+        behavior_metrics: {
+
+            average_usage_minutes:
+                Number(
+                    totalUsageMinutes.toFixed(
+                        1
+                    )
+                ),
+
+            t_hours:
+                Number(
+                    safeReportNumber(
+                        usageData
+                            ?.totalUsageHours
+                    ).toFixed(
+                        2
+                    )
+                ),
+
+            n_switches:
+                safeReportNumber(
+                    usageData
+                        ?.appSwitchCount
+                ),
+
+            c_category_switches:
+                safeReportNumber(
+                    usageData
+                        ?.categorySwitchCount
+                ),
+
+            r_repeat_loops:
+                safeReportNumber(
+                    usageData
+                        ?.repeatLoopCount
+                ),
+
+            ddi:
+                safeReportNumber(
+                    ddiResult
+                        ?.ddi
+                ),
+
+            learning_use_ratio:
+                learningRatio,
+
+            entertainment_use_ratio:
+                entertainmentRatio
+
+        },
+
+
+        self_assessment:
+            dailySelf
+                ? {
+
+                    estimated_daily_minutes:
+                        safeReportNumber(
+                            dailySelf
+                                .estimatedDailyMinutes
+                        ),
+
+                    switching_frequency:
+                        safeReportNumber(
+                            dailySelf
+                                .switchingSelfScore
+                        ),
+
+                    habitual_checking:
+                        safeReportNumber(
+                            dailySelf
+                                .habitualCheckingSelfScore
+                        ),
+
+                    learning_use_ratio:
+                        safeReportNumber(
+                            dailySelf
+                                .perceivedLearningRatio
+                        ),
+
+                    entertainment_use_ratio:
+                        safeReportNumber(
+                            dailySelf
+                                .perceivedEntertainmentRatio
+                        )
+
+                }
+                : null,
+
+
+        perception_gap:
+            perceptionGap,
+
+
+        self_awareness_comparison:
+            buildSelfAwarenessInputSnapshot(),
+
+
+        top_apps:
+            (
+                usageData
+                    ?.apps
+                ?? []
+            )
+                .slice(
+                    0,
+                    10
+                )
+                .map(
+                    (app) => ({
+
+                        app_name:
+                            app.name
+                            ?? app.packageName
+                            ?? "알 수 없는 앱",
+
+                        category:
+                            app.category
+                            ?? "기타",
+
+                        usage_minutes:
+                            safeReportNumber(
+                                app.usageMinutes
+                            )
+
+                    })
+                ),
+
+
+        top_transitions:
+            (
+                usageData
+                    ?.transitions
+                ?? []
+            )
+                .slice(
+                    0,
+                    10
+                )
+                .map(
+                    (item) => ({
+
+                        from_app:
+                            item.fromApp
+                            ?? item.fromPackage
+                            ?? "",
+
+                        to_app:
+                            item.toApp
+                            ?? item.toPackage
+                            ?? "",
+
+                        transition_count:
+                            safeReportNumber(
+                                item.count
+                            )
+
+                    })
+                ),
+
+
+        repeat_loops:
+            (
+                usageData
+                    ?.repeatLoops
+                ?? []
+            )
+                .slice(
+                    0,
+                    8
+                )
+                .map(
+                    (item) => ({
+
+                        path:
+                            Array.isArray(
+                                item.route
+                            )
+                                ? item.route.join(
+                                    " → "
+                                )
+                                : String(
+                                    item.path
+                                    ?? ""
+                                ),
+
+                        loop_count:
+                            safeReportNumber(
+                                item.count
+                            )
+
+                    })
+                ),
+
+
+        eeg:
+            null,
+
+        previous_challenge:
+            null
+
+    };
+
+}
+
+
+/* =========================================
+   Edge Function v2 캐시 확인
+========================================= */
+
+function parseReportPerceptionGapEnvelope(
+    value
+) {
+
+    if (
+        typeof value !== "string"
+        ||
+        !value.trim()
+    ) {
+
+        return null;
+
+    }
+
+
+    try {
+
+        const parsed =
+            JSON.parse(
+                value
+            );
+
+
+        if (
+            parsed
+            &&
+            typeof parsed === "object"
+        ) {
+
+            return parsed;
+
+        }
+
+    }
+
+    catch (
+        error
+    ) {
+
+        return null;
+
+    }
+
+
+    return null;
+
+}
+
+
+function hasCompleteSelfAwarenessAiInterpretation(
+    value
+) {
+
+    if (
+        !value
+        ||
+        typeof value !== "object"
+    ) {
+
+        return false;
+
+    }
+
+
+    const periods = [
+        "daily",
+        "weekly",
+        "monthly"
+    ];
+
+
+    const fields = [
+        "usage_insight",
+        "checking_insight",
+        "learning_insight",
+        "entertainment_insight",
+        "overall_summary"
+    ];
+
+
+    return periods.every(
+        (period) => {
+
+            const item =
+                value[
+                    period
+                ];
+
+
+            return (
+                item
+                &&
+                fields.every(
+                    (field) =>
+                        typeof item[field]
+                        ===
+                        "string"
+                        &&
+                        item[field].trim()
+                )
+            );
+
+        }
+    );
+
+}
+
+
+/* =========================================
+   오늘 AI 분석 입력 행 준비
+========================================= */
+
+async function ensureDailyReportAiInput() {
+
+    const {
+        data: sessionData,
+        error: sessionError
+    } =
+        await supabase
+            .auth
+            .getSession();
+
+
+    if (
+        sessionError
+    ) {
+
+        throw sessionError;
+
+    }
+
+
+    const user =
+        sessionData
+            ?.session
+            ?.user
+        ?? null;
+
+
+    if (
+        !user
+    ) {
+
+        throw new Error(
+            "로그인 정보를 확인할 수 없습니다."
+        );
+
+    }
+
+
+    const analysisDate =
+        getReportAnalysisDate();
+
+
+    const {
+        data: existingRows,
+        error: readError
+    } =
+        await supabase
+            .from(
+                "ai_analysis"
+            )
+            .select(
+                "id, analyzed_at, summary, habit_pattern, learning_direction, solution_suggestions, perception_gap, created_at"
+            )
+            .eq(
+                "user_id",
+                user.id
+            )
+            .eq(
+                "analysis_date",
+                analysisDate
+            )
+            .eq(
+                "period_type",
+                "daily"
+            )
+            .order(
+                "created_at",
+                {
+                    ascending:
+                        false
+                }
+            )
+            .limit(
+                1
+            );
+
+
+    if (
+        readError
+    ) {
+
+        throw readError;
+
+    }
+
+
+    const existing =
+        existingRows
+            ?.[0]
+        ?? null;
+
+
+    const envelope =
+        parseReportPerceptionGapEnvelope(
+            existing
+                ?.perception_gap
+        );
+
+
+    const cachedInterpretation =
+        envelope
+            ?.self_awareness_interpretation
+        ?? null;
+
+
+    const hasV2Cache =
+        Boolean(
+            existing
+                ?.analyzed_at
+        )
+        &&
+        Boolean(
+            existing
+                ?.summary
+        )
+        &&
+        Boolean(
+            existing
+                ?.habit_pattern
+        )
+        &&
+        Boolean(
+            existing
+                ?.learning_direction
+        )
+        &&
+        Boolean(
+            existing
+                ?.solution_suggestions
+        )
+        &&
+        hasCompleteSelfAwarenessAiInterpretation(
+            cachedInterpretation
+        );
+
+
+    if (
+        hasV2Cache
+    ) {
+
+        return {
+            user,
+            analysisId:
+                existing.id,
+            cached:
+                true
+        };
+
+    }
+
+
+    const inputSnapshot =
+        buildReportAiInputSnapshot();
+
+
+    const perceptionGapText =
+        inputSnapshot
+            ?.perception_gap
+            ?.summary
+        ??
+        "자기인식 비교 데이터 준비 완료";
+
+
+    if (
+        existing
+    ) {
+
+        const {
+            error: updateError
+        } =
+            await supabase
+                .from(
+                    "ai_analysis"
+                )
+                .update({
+
+                    input_snapshot:
+                        inputSnapshot,
+
+                    perception_gap:
+                        perceptionGapText,
+
+                    analysis_version:
+                        2
+
+                })
+                .eq(
+                    "id",
+                    existing.id
+                );
+
+
+        if (
+            updateError
+        ) {
+
+            throw updateError;
+
+        }
+
+
+        return {
+            user,
+            analysisId:
+                existing.id,
+            cached:
+                false
+        };
+
+    }
+
+
+    const {
+        data: insertedRows,
+        error: insertError
+    } =
+        await supabase
+            .from(
+                "ai_analysis"
+            )
+            .insert({
+
+                user_id:
+                    user.id,
+
+                analysis_date:
+                    analysisDate,
+
+                period_type:
+                    "daily",
+
+                input_snapshot:
+                    inputSnapshot,
+
+                perception_gap:
+                    perceptionGapText,
+
+                analysis_version:
+                    2
+
+            })
+            .select(
+                "id"
+            )
+            .limit(
+                1
+            );
+
+
+    if (
+        insertError
+    ) {
+
+        throw insertError;
+
+    }
+
+
+    return {
+        user,
+        analysisId:
+            insertedRows
+                ?.[0]
+                ?.id
+            ?? null,
+        cached:
+            false
+    };
+
+}
+
+
+/* =========================================
+   Gemini 자기인식 비교 해석 표시
+========================================= */
+
+function applyReportSelfAwarenessAiText() {
+
+    if (
+        !reportAiUnlocked
+    ) {
+
+        return;
+
+    }
+
+
+    const interpretation =
+        reportSelfAwarenessAiInterpretation
+            ?.[
+                selectedSelfAwarenessPeriod
+            ]
+        ?? null;
+
+
+    if (
+        !interpretation
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        selfUsageInsightElement
+    ) {
+
+        selfUsageInsightElement.textContent =
+            interpretation
+                .usage_insight
+            ||
+            "AI 비교 해석을 생성하지 못했습니다.";
+
+    }
+
+
+    if (
+        selfLoopInsightElement
+    ) {
+
+        selfLoopInsightElement.textContent =
+            interpretation
+                .checking_insight
+            ||
+            "AI 비교 해석을 생성하지 못했습니다.";
+
+    }
+
+
+    if (
+        selfLearningInsightElement
+    ) {
+
+        selfLearningInsightElement.textContent =
+            interpretation
+                .learning_insight
+            ||
+            "AI 비교 해석을 생성하지 못했습니다.";
+
+    }
+
+
+    if (
+        selfEntertainmentInsightElement
+    ) {
+
+        selfEntertainmentInsightElement.textContent =
+            interpretation
+                .entertainment_insight
+            ||
+            "AI 비교 해석을 생성하지 못했습니다.";
+
+    }
+
+
+    if (
+        selfAwarenessSummaryElement
+    ) {
+
+        selfAwarenessSummaryElement.textContent =
+            interpretation
+                .overall_summary
+            ||
+            "AI 비교 해석을 생성하지 못했습니다.";
+
+    }
+
+}
+
+
+/* =========================================
+   AI 버튼 전에는 AI 해석을 가림
+========================================= */
+
+function maskSelfAwarenessAiInterpretation() {
+
+    const waitingText =
+        "AI 분석을 눌러 Gemini의 비교 해석을 확인하세요.";
+
+
+    [
+        selfUsageInsightElement,
+        selfLoopInsightElement,
+        selfLearningInsightElement,
+        selfEntertainmentInsightElement,
+        selfAwarenessSummaryElement
+    ]
+        .forEach(
+            (element) => {
+
+                if (
+                    element
+                ) {
+
+                    element.textContent =
+                        waitingText;
+
+                }
+
+            }
+        );
+
+}
+
+
+function maskAiGeneratedReportSections() {
+
+    if (
+        reportCoreAnalysisElement
+    ) {
+
+        reportCoreAnalysisElement.textContent =
+            "AI 분석을 눌러 오늘의 핵심 분석을 확인하세요.";
+
+    }
+
+
+    if (
+        reportAiAnalysisMetaElement
+    ) {
+
+        reportAiAnalysisMetaElement.textContent =
+            "AI 분석 대기";
+
+    }
+
+
+    if (
+        reportLearningDirectionElement
+    ) {
+
+        reportLearningDirectionElement.textContent =
+            "AI 분석 후 학습 방향이 표시됩니다.";
+
+    }
+
+
+    if (
+        reportSolutionSuggestionsElement
+    ) {
+
+        reportSolutionSuggestionsElement.textContent =
+            "AI 분석 후 실행 가능한 해결 방법이 표시됩니다.";
+
+    }
+
+
+    if (
+        reportPatternTitleElement
+    ) {
+
+        reportPatternTitleElement.textContent =
+            "AI 분석 대기";
+
+    }
+
+
+    if (
+        reportPatternDescriptionElement
+    ) {
+
+        reportPatternDescriptionElement.textContent =
+            "AI 분석을 눌러 Gemini가 관찰한 이용 습관을 확인하세요.";
+
+    }
+
+
+    if (
+        reportChallengeTitleElement
+    ) {
+
+        reportChallengeTitleElement.textContent =
+            "AI 분석을 눌러 오늘의 Challenge를 생성하세요.";
+
+    }
+
+
+    if (
+        reportChallengeDescriptionElement
+    ) {
+
+        reportChallengeDescriptionElement.textContent =
+            "오늘의 실제 사용 데이터를 Gemini가 분석한 뒤 실천 목표를 제안합니다.";
+
+    }
+
+
+    if (
+        reportChallengeGoalElement
+    ) {
+
+        reportChallengeGoalElement.textContent =
+            "-";
+
+    }
+
+
+    if (
+        reportChallengeDateElement
+    ) {
+
+        reportChallengeDateElement.textContent =
+            "-";
+
+    }
+
+
+    if (
+        reportChallengeBaselineElement
+    ) {
+
+        reportChallengeBaselineElement.textContent =
+            "-";
+
+    }
+
+
+    if (
+        reportChallengeStatusElement
+    ) {
+
+        reportChallengeStatusElement.textContent =
+            "-";
+
+    }
+
+
+    maskSelfAwarenessAiInterpretation();
+
+}
+
+
+/* =========================================
+   AI 버튼 상태
+========================================= */
+
+function setReportAiButtonState(
+    {
+        busy = false,
+        message = "",
+        state = ""
+    } = {}
+) {
+
+    reportAiBusy =
+        busy;
+
+
+    if (
+        reportAiButton
+    ) {
+
+        reportAiButton.disabled =
+            busy;
+
+
+        reportAiButton.textContent =
+            busy
+                ? "AI 분석 중..."
+                : "AI 분석";
+
+    }
+
+
+    if (
+        reportAiStatusElement
+    ) {
+
+        reportAiStatusElement.textContent =
+            message;
+
+
+        if (
+            state
+        ) {
+
+            reportAiStatusElement.dataset.state =
+                state;
+
+        }
+
+        else {
+
+            delete reportAiStatusElement.dataset.state;
+
+        }
+
+    }
+
+}
+
+
+/* =========================================
+   리포트 상단 AI 분석 버튼 생성
+========================================= */
+
+function setupReportAiButton() {
+
+    if (
+        document.querySelector(
+            "#reportAiControl"
+        )
+    ) {
+
+        reportAiButton =
+            document.querySelector(
+                "#runReportAiAnalysis"
+            );
+
+
+        reportAiStatusElement =
+            document.querySelector(
+                "#reportAiStatus"
+            );
+
+
+        return;
+
+    }
+
+
+    const focusHeading =
+        document.querySelector(
+            "#reportPage .report-section-heading-focus"
+        );
+
+
+    if (
+        !focusHeading
+    ) {
+
+        return;
+
+    }
+
+
+    const control =
+        document.createElement(
+            "section"
+        );
+
+
+    control.id =
+        "reportAiControl";
+
+
+    control.setAttribute(
+        "aria-label",
+        "AI 분석 실행"
+    );
+
+
+    control.innerHTML = `
+
+        <div class="report-ai-control-copy">
+            <span>AI REPORT</span>
+
+            <strong>
+                오늘의 AI 분석
+            </strong>
+
+            <p>
+                버튼을 누를 때만 오늘의 실제 사용 데이터와
+                자기인식 설문을 Gemini가 분석합니다.
+            </p>
+        </div>
+
+        <button
+            id="runReportAiAnalysis"
+            type="button"
+        >
+            AI 분석
+        </button>
+
+        <p
+            id="reportAiStatus"
+            aria-live="polite"
+        >
+            AI 분석 대기
+        </p>
+
+    `;
+
+
+    control.style.cssText =
+        [
+            "margin:16px 0 18px",
+            "padding:18px",
+            "border:1px solid #dbe4ff",
+            "border-radius:18px",
+            "background:linear-gradient(135deg,#f8faff,#eef3ff)"
+        ].join(
+            ";"
+        );
+
+
+    const copy =
+        control.querySelector(
+            ".report-ai-control-copy"
+        );
+
+
+    if (
+        copy
+    ) {
+
+        copy.style.cssText =
+            "margin-bottom:14px;";
+
+    }
+
+
+    const label =
+        control.querySelector(
+            ".report-ai-control-copy span"
+        );
+
+
+    if (
+        label
+    ) {
+
+        label.style.cssText =
+            "display:block;font-size:11px;font-weight:800;letter-spacing:.12em;color:#4568ff;margin-bottom:4px;";
+
+    }
+
+
+    const title =
+        control.querySelector(
+            ".report-ai-control-copy strong"
+        );
+
+
+    if (
+        title
+    ) {
+
+        title.style.cssText =
+            "display:block;font-size:18px;color:#18233b;margin-bottom:6px;";
+
+    }
+
+
+    const description =
+        control.querySelector(
+            ".report-ai-control-copy p"
+        );
+
+
+    if (
+        description
+    ) {
+
+        description.style.cssText =
+            "margin:0;color:#667085;font-size:13px;line-height:1.55;";
+
+    }
+
+
+    reportAiButton =
+        control.querySelector(
+            "#runReportAiAnalysis"
+        );
+
+
+    if (
+        reportAiButton
+    ) {
+
+        reportAiButton.style.cssText =
+            [
+                "width:100%",
+                "min-height:46px",
+                "border:0",
+                "border-radius:13px",
+                "background:#4264ff",
+                "color:white",
+                "font-size:15px",
+                "font-weight:800",
+                "cursor:pointer"
+            ].join(
+                ";"
+            );
+
+    }
+
+
+    reportAiStatusElement =
+        control.querySelector(
+            "#reportAiStatus"
+        );
+
+
+    if (
+        reportAiStatusElement
+    ) {
+
+        reportAiStatusElement.style.cssText =
+            "margin:10px 0 0;text-align:center;color:#667085;font-size:12px;";
+
+    }
+
+
+    focusHeading.parentNode.insertBefore(
+        control,
+        focusHeading
+    );
+
+
+    if (
+        reportAiButton
+    ) {
+
+        reportAiButton.addEventListener(
+            "click",
+            () => {
+
+                runReportAiAnalysis();
+
+            }
+        );
+
+    }
+
+}
+
+
+/* =========================================
+   AI 분석 실행
+========================================= */
+
+async function runReportAiAnalysis() {
+
+    if (
+        reportAiBusy
+    ) {
+
+        return;
+
+    }
+
+
+    reportAiUnlocked =
+        false;
+
+    reportSelfAwarenessAiInterpretation =
+        null;
+
+
+    maskAiGeneratedReportSections();
+
+
+    setReportAiButtonState({
+        busy:
+            true,
+
+        message:
+            "오늘의 실제 데이터와 자기인식 설문을 준비하고 있습니다."
+    });
+
+
+    try {
+
+        const inputInfo =
+            await ensureDailyReportAiInput();
+
+
+        setReportAiButtonState({
+            busy:
+                true,
+
+            message:
+                inputInfo.cached
+                    ? "오늘 저장된 Gemini 분석 결과를 확인하고 있습니다."
+                    : "Gemini가 오늘의 사용 습관과 자기인식 차이를 분석하고 있습니다."
+        });
+
+
+        const {
+            data,
+            error
+        } =
+            await supabase
+                .functions
+                .invoke(
+                    "dynamic-api",
+                    {
+                        body: {
+                            period_type:
+                                "daily"
+                        }
+                    }
+                );
+
+
+        if (
+            error
+        ) {
+
+            throw new Error(
+                data
+                    ?.message
+                ||
+                error
+                    ?.message
+                ||
+                "AI 분석 호출에 실패했습니다."
+            );
+
+        }
+
+
+        if (
+            data
+                ?.success
+            !==
+            true
+        ) {
+
+            throw new Error(
+                data
+                    ?.message
+                ||
+                "AI 분석 결과를 받지 못했습니다."
+            );
+
+        }
+
+
+        reportSelfAwarenessAiInterpretation =
+            data
+                ?.self_awareness_interpretation
+            ?? null;
+
+
+        if (
+            !hasCompleteSelfAwarenessAiInterpretation(
+                reportSelfAwarenessAiInterpretation
+            )
+        ) {
+
+            throw new Error(
+                "Gemini 자기인식 비교 해석 결과가 완전하지 않습니다."
+            );
+
+        }
+
+
+        usageData =
+            await loadEchoPathUsageData();
+
+
+        ddiResult =
+            calculateDDI(
+                usageData
+            );
+
+
+        reportAiUnlocked =
+            true;
+
+
+        renderAiReport();
+
+        renderChallengeComparison();
+
+
+        setReportAiButtonState({
+            busy:
+                false,
+
+            state:
+                "success",
+
+            message:
+                data.cached
+                    ? "오늘의 저장된 Gemini 분석 결과를 불러왔습니다."
+                    : "오늘의 Gemini AI 분석이 완료되었습니다."
+        });
+
+    }
+
+    catch (
+        error
+    ) {
+
+        console.error(
+            "리포트 AI 분석 실패:",
+            error
+        );
+
+
+        reportAiUnlocked =
+            false;
+
+        reportSelfAwarenessAiInterpretation =
+            null;
+
+
+        maskAiGeneratedReportSections();
+
+
+        setReportAiButtonState({
+            busy:
+                false,
+
+            state:
+                "error",
+
+            message:
+                error
+                    ?.message
+                ||
+                "AI 분석에 실패했습니다. 잠시 후 다시 시도해 주세요."
+        });
+
+    }
+
+}
 
 
 function renderAiReport() {
@@ -2308,6 +4337,21 @@ function renderAiReport() {
     }
 
 
+    if (
+        reportAiUnlocked
+    ) {
+
+        applyReportSelfAwarenessAiText();
+
+    }
+
+    else {
+
+        maskAiGeneratedReportSections();
+
+    }
+
+
     console.log(
         "Echo Path AI 분석 / Challenge 화면 반영:",
         {
@@ -2322,6 +4366,8 @@ function renderAiReport() {
 /* =========================================
    리포트 생성 실행
 ========================================= */
+
+setupReportAiButton();
 
 renderAiReport();
 
