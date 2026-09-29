@@ -12,6 +12,10 @@ import {
 } from "./realtime.js";
 
 import {
+    supabase
+} from "./supabase.js";
+
+import {
     loadEchoPathUsageData
 } from "./supabase-data.js";
 
@@ -3672,3 +3676,1089 @@ await startRealtimeAfterUiReady();
 /* =========================================
    END OF ECHO PATH APP
 ========================================= */
+
+/* =========================================
+   22. SETTINGS - 앱 카테고리 설정
+
+   - 오늘 실제로 수집된 usageData.apps 사용
+   - 앱 이름 / 패키지명 / 사용시간 표시
+   - 사용자별 카테고리 변경
+   - Supabase Auth user_metadata에 저장
+   - 저장 후 Echo Path 전체 통계/도시 재반영
+========================================= */
+
+const categorySearchInput =
+    document.querySelector(
+        "#categorySearchInput"
+    );
+
+const categoryAppList =
+    document.querySelector(
+        "#categoryAppList"
+    );
+
+const categorySettingsStatus =
+    document.querySelector(
+        "#categorySettingsStatus"
+    );
+
+const saveCategorySettingsButton =
+    document.querySelector(
+        "#saveCategorySettings"
+    );
+
+const resetCategorySettingsButton =
+    document.querySelector(
+        "#resetCategorySettings"
+    );
+
+const categorySettingsPageButtons =
+    document.querySelectorAll(
+        '[data-page-target="categorySettingsPage"]'
+    );
+
+
+const SETTINGS_CATEGORY_OPTIONS = [
+    "AI·정보",
+    "학습",
+    "정보·검색",
+    "생산성",
+    "소통",
+    "지도·이동",
+    "생활·도구",
+    "SNS",
+    "미디어",
+    "쇼핑",
+    "게임",
+    "기타"
+];
+
+
+let settingsCategoryApps =
+    [];
+
+let settingsCategoryDraft =
+    {};
+
+let settingsCategoryUser =
+    null;
+
+let categorySettingsLoading =
+    false;
+
+
+/* =========================================
+   상태 문구
+========================================= */
+
+function setCategorySettingsStatus(
+    message,
+    state = ""
+) {
+
+    if (
+        !categorySettingsStatus
+    ) {
+
+        return;
+
+    }
+
+
+    categorySettingsStatus.textContent =
+        message
+        ?? "";
+
+
+    if (
+        state
+    ) {
+
+        categorySettingsStatus.dataset.state =
+            state;
+
+    }
+
+    else {
+
+        delete categorySettingsStatus.dataset.state;
+
+    }
+
+}
+
+
+/* =========================================
+   저장된 사용자 카테고리 읽기
+========================================= */
+
+function getSettingsCategoryOverrides(
+    user
+) {
+
+    const overrides =
+        user
+            ?.user_metadata
+            ?.app_category_overrides;
+
+
+    if (
+        !overrides
+        ||
+        typeof overrides !== "object"
+        ||
+        Array.isArray(
+            overrides
+        )
+    ) {
+
+        return {};
+
+    }
+
+
+    return {
+        ...overrides
+    };
+
+}
+
+
+/* =========================================
+   사용시간 표시
+========================================= */
+
+function formatSettingsUsageMinutes(
+    minutes
+) {
+
+    const safeMinutes =
+        Math.max(
+            0,
+            Math.round(
+                Number(
+                    minutes
+                    ?? 0
+                )
+                || 0
+            )
+        );
+
+
+    const hours =
+        Math.floor(
+            safeMinutes / 60
+        );
+
+
+    const remain =
+        safeMinutes % 60;
+
+
+    if (
+        hours > 0
+    ) {
+
+        return `${hours}시간 ${remain}분`;
+
+    }
+
+
+    return `${remain}분`;
+
+}
+
+
+/* =========================================
+   앱 목록 화면 생성
+========================================= */
+
+function renderSettingsCategoryApps() {
+
+    if (
+        !categoryAppList
+    ) {
+
+        return;
+
+    }
+
+
+    const keyword =
+        String(
+            categorySearchInput
+                ?.value
+            ?? ""
+        )
+            .trim()
+            .toLowerCase();
+
+
+    const filteredApps =
+        settingsCategoryApps
+            .filter(
+                (app) => {
+
+                    if (
+                        !keyword
+                    ) {
+
+                        return true;
+
+                    }
+
+
+                    const name =
+                        String(
+                            app.name
+                            ?? ""
+                        )
+                            .toLowerCase();
+
+
+                    const packageName =
+                        String(
+                            app.packageName
+                            ?? ""
+                        )
+                            .toLowerCase();
+
+
+                    return (
+                        name.includes(
+                            keyword
+                        )
+                        ||
+                        packageName.includes(
+                            keyword
+                        )
+                    );
+
+                }
+            );
+
+
+    categoryAppList.innerHTML =
+        "";
+
+
+    if (
+        filteredApps.length === 0
+    ) {
+
+        const emptyElement =
+            document.createElement(
+                "p"
+            );
+
+
+        emptyElement.className =
+            "settings-empty-message";
+
+
+        emptyElement.textContent =
+            settingsCategoryApps.length === 0
+                ? "오늘 수집된 앱 사용 데이터가 없습니다."
+                : "검색 결과가 없습니다.";
+
+
+        categoryAppList.appendChild(
+            emptyElement
+        );
+
+
+        return;
+
+    }
+
+
+    filteredApps.forEach(
+        (app) => {
+
+            const item =
+                document.createElement(
+                    "div"
+                );
+
+
+            item.className =
+                "category-app-item";
+
+
+            const copy =
+                document.createElement(
+                    "div"
+                );
+
+
+            copy.className =
+                "category-app-copy";
+
+
+            const nameElement =
+                document.createElement(
+                    "strong"
+                );
+
+
+            nameElement.textContent =
+                app.name
+                ||
+                app.packageName
+                ||
+                "알 수 없는 앱";
+
+
+            const packageElement =
+                document.createElement(
+                    "span"
+                );
+
+
+            packageElement.textContent =
+                app.packageName
+                || "";
+
+
+            const usageElement =
+                document.createElement(
+                    "small"
+                );
+
+
+            usageElement.textContent =
+                `오늘 ${formatSettingsUsageMinutes(
+                    app.usageMinutes
+                )} 사용`;
+
+
+            copy.append(
+                nameElement,
+                packageElement,
+                usageElement
+            );
+
+
+            const select =
+                document.createElement(
+                    "select"
+                );
+
+
+            select.className =
+                "category-select";
+
+
+            select.setAttribute(
+                "aria-label",
+                `${nameElement.textContent} 카테고리`
+            );
+
+
+            const sourceCategory =
+                String(
+                    app.category
+                    ?? "기타"
+                );
+
+
+            const savedCategory =
+                settingsCategoryDraft[
+                    app.packageName
+                ];
+
+
+            const selectedCategory =
+                String(
+                    savedCategory
+                    ?? sourceCategory
+                    ?? "기타"
+                );
+
+
+            Array.from(
+                new Set(
+                    [
+                        ...SETTINGS_CATEGORY_OPTIONS,
+                        sourceCategory,
+                        selectedCategory
+                    ]
+                        .filter(
+                            Boolean
+                        )
+                )
+            )
+                .forEach(
+                    (category) => {
+
+                        const option =
+                            document.createElement(
+                                "option"
+                            );
+
+
+                        option.value =
+                            category;
+
+
+                        option.textContent =
+                            category;
+
+
+                        option.selected =
+                            category
+                            ===
+                            selectedCategory;
+
+
+                        select.appendChild(
+                            option
+                        );
+
+                    }
+                );
+
+
+            select.addEventListener(
+                "change",
+                () => {
+
+                    const nextCategory =
+                        String(
+                            select.value
+                            ?? ""
+                        )
+                            .trim();
+
+
+                    if (
+                        !nextCategory
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    /*
+                        현재 선택한 카테고리를 명시적으로 저장합니다.
+                        이렇게 하면 기존 사용자 분류가 있는 앱도
+                        다른 카테고리로 안정적으로 변경할 수 있습니다.
+                    */
+
+                    settingsCategoryDraft[
+                        app.packageName
+                    ] =
+                        nextCategory;
+
+
+                    setCategorySettingsStatus(
+                        "변경사항이 있습니다. 저장 버튼을 눌러 주세요."
+                    );
+
+                }
+            );
+
+
+            item.append(
+                copy,
+                select
+            );
+
+
+            categoryAppList.appendChild(
+                item
+            );
+
+        }
+    );
+
+}
+
+
+/* =========================================
+   오늘 사용한 앱 목록 불러오기
+========================================= */
+
+async function loadSettingsCategoryApps() {
+
+    if (
+        !categoryAppList
+        ||
+        categorySettingsLoading
+    ) {
+
+        return;
+
+    }
+
+
+    categorySettingsLoading =
+        true;
+
+
+    categoryAppList.innerHTML =
+        '<p class="settings-empty-message">앱 목록을 불러오는 중입니다.</p>';
+
+
+    setCategorySettingsStatus(
+        "오늘 수집된 앱 데이터를 확인하는 중입니다."
+    );
+
+
+    try {
+
+        /*
+            홈 / 통계 / DDI에서 이미 사용 중인
+            최신 usageData.apps를 그대로 사용합니다.
+        */
+
+        const sourceApps =
+            Array.isArray(
+                usageData
+                    ?.apps
+            )
+                ? usageData.apps
+                : [];
+
+
+        settingsCategoryApps =
+            sourceApps
+                .map(
+                    (app) => ({
+
+                        packageName:
+                            String(
+                                app
+                                    ?.packageName
+                                ?? ""
+                            )
+                                .trim(),
+
+                        name:
+                            String(
+                                app
+                                    ?.name
+                                ??
+                                app
+                                    ?.packageName
+                                ??
+                                "알 수 없는 앱"
+                            ),
+
+                        category:
+                            String(
+                                app
+                                    ?.category
+                                ??
+                                "기타"
+                            ),
+
+                        usageMinutes:
+                            Number(
+                                app
+                                    ?.usageMinutes
+                                ??
+                                0
+                            )
+                            || 0
+
+                    })
+                )
+                .filter(
+                    (app) =>
+                        Boolean(
+                            app.packageName
+                        )
+                )
+                .sort(
+                    (
+                        a,
+                        b
+                    ) =>
+                        b.usageMinutes
+                        -
+                        a.usageMinutes
+                );
+
+
+        const {
+            data,
+            error
+        } =
+            await supabase
+                .auth
+                .getSession();
+
+
+        if (
+            error
+        ) {
+
+            throw error;
+
+        }
+
+
+        settingsCategoryUser =
+            data
+                ?.session
+                ?.user
+            ?? null;
+
+
+        settingsCategoryDraft =
+            getSettingsCategoryOverrides(
+                settingsCategoryUser
+            );
+
+
+        renderSettingsCategoryApps();
+
+
+        setCategorySettingsStatus(
+            settingsCategoryApps.length > 0
+                ? `${settingsCategoryApps.length}개 앱을 불러왔습니다.`
+                : "오늘 수집된 앱 사용 데이터가 없습니다.",
+            settingsCategoryApps.length > 0
+                ? "success"
+                : ""
+        );
+
+    }
+
+    catch (
+        error
+    ) {
+
+        console.error(
+            "앱 카테고리 목록 불러오기 실패:",
+            error
+        );
+
+
+        categoryAppList.innerHTML =
+            '<p class="settings-empty-message">앱 목록을 표시하지 못했습니다.</p>';
+
+
+        setCategorySettingsStatus(
+            "앱 목록을 표시하지 못했습니다. 다시 시도해 주세요.",
+            "error"
+        );
+
+    }
+
+    finally {
+
+        categorySettingsLoading =
+            false;
+
+    }
+
+}
+
+
+/* =========================================
+   사용자 카테고리 저장
+========================================= */
+
+async function saveSettingsCategories() {
+
+    if (
+        saveCategorySettingsButton
+    ) {
+
+        saveCategorySettingsButton.disabled =
+            true;
+
+    }
+
+
+    setCategorySettingsStatus(
+        "카테고리 설정을 저장하는 중입니다."
+    );
+
+
+    try {
+
+        const {
+            data: sessionData,
+            error: sessionError
+        } =
+            await supabase
+                .auth
+                .getSession();
+
+
+        if (
+            sessionError
+        ) {
+
+            throw sessionError;
+
+        }
+
+
+        const user =
+            sessionData
+                ?.session
+                ?.user
+            ?? settingsCategoryUser
+            ?? null;
+
+
+        if (
+            !user
+        ) {
+
+            throw new Error(
+                "로그인 정보를 확인할 수 없습니다."
+            );
+
+        }
+
+
+        const {
+            data,
+            error
+        } =
+            await supabase
+                .auth
+                .updateUser({
+                    data: {
+                        ...(
+                            user
+                                .user_metadata
+                            ?? {}
+                        ),
+
+                        app_category_overrides: {
+                            ...settingsCategoryDraft
+                        }
+                    }
+                });
+
+
+        if (
+            error
+        ) {
+
+            throw error;
+
+        }
+
+
+        settingsCategoryUser =
+            data
+                ?.user
+            ?? user;
+
+
+        setCategorySettingsStatus(
+            "저장되었습니다. 변경한 카테고리를 전체 화면에 반영합니다.",
+            "success"
+        );
+
+
+        /*
+            supabase-data.js가 사용자 메타데이터를 다시 읽어
+            통계 / 리포트 / DDI 도시에 같은 분류를 적용하도록 새로고침
+        */
+
+        window.setTimeout(
+            () => {
+
+                window.location.reload();
+
+            },
+            650
+        );
+
+    }
+
+    catch (
+        error
+    ) {
+
+        console.error(
+            "앱 카테고리 저장 실패:",
+            error
+        );
+
+
+        setCategorySettingsStatus(
+            error
+                ?.message
+            ||
+            "저장하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+            "error"
+        );
+
+    }
+
+    finally {
+
+        if (
+            saveCategorySettingsButton
+        ) {
+
+            saveCategorySettingsButton.disabled =
+                false;
+
+        }
+
+    }
+
+}
+
+
+/* =========================================
+   사용자 분류 초기화
+========================================= */
+
+async function resetSettingsCategories() {
+
+    const confirmed =
+        window.confirm(
+            "직접 설정한 앱 카테고리를 모두 초기화할까요?\n\n원본 사용 데이터와 T·N·C·R·DDI 값은 삭제되지 않습니다."
+        );
+
+
+    if (
+        !confirmed
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        resetCategorySettingsButton
+    ) {
+
+        resetCategorySettingsButton.disabled =
+            true;
+
+    }
+
+
+    setCategorySettingsStatus(
+        "사용자 분류를 초기화하는 중입니다."
+    );
+
+
+    try {
+
+        const {
+            data: sessionData,
+            error: sessionError
+        } =
+            await supabase
+                .auth
+                .getSession();
+
+
+        if (
+            sessionError
+        ) {
+
+            throw sessionError;
+
+        }
+
+
+        const user =
+            sessionData
+                ?.session
+                ?.user
+            ?? null;
+
+
+        if (
+            !user
+        ) {
+
+            throw new Error(
+                "로그인 정보를 확인할 수 없습니다."
+            );
+
+        }
+
+
+        const {
+            data,
+            error
+        } =
+            await supabase
+                .auth
+                .updateUser({
+                    data: {
+                        ...(
+                            user
+                                .user_metadata
+                            ?? {}
+                        ),
+
+                        app_category_overrides:
+                            {}
+                    }
+                });
+
+
+        if (
+            error
+        ) {
+
+            throw error;
+
+        }
+
+
+        settingsCategoryUser =
+            data
+                ?.user
+            ?? user;
+
+
+        settingsCategoryDraft =
+            {};
+
+
+        setCategorySettingsStatus(
+            "사용자 분류를 초기화했습니다.",
+            "success"
+        );
+
+
+        window.setTimeout(
+            () => {
+
+                window.location.reload();
+
+            },
+            650
+        );
+
+    }
+
+    catch (
+        error
+    ) {
+
+        console.error(
+            "앱 카테고리 초기화 실패:",
+            error
+        );
+
+
+        setCategorySettingsStatus(
+            error
+                ?.message
+            ||
+            "초기화하지 못했습니다.",
+            "error"
+        );
+
+    }
+
+    finally {
+
+        if (
+            resetCategorySettingsButton
+        ) {
+
+            resetCategorySettingsButton.disabled =
+                false;
+
+        }
+
+    }
+
+}
+
+
+/* =========================================
+   이벤트 연결
+========================================= */
+
+categorySettingsPageButtons.forEach(
+    (button) => {
+
+        button.addEventListener(
+            "click",
+            () => {
+
+                loadSettingsCategoryApps();
+
+            }
+        );
+
+    }
+);
+
+
+if (
+    categorySearchInput
+) {
+
+    categorySearchInput.addEventListener(
+        "input",
+        renderSettingsCategoryApps
+    );
+
+}
+
+
+if (
+    saveCategorySettingsButton
+) {
+
+    saveCategorySettingsButton.addEventListener(
+        "click",
+        () => {
+
+            saveSettingsCategories();
+
+        }
+    );
+
+}
+
+
+if (
+    resetCategorySettingsButton
+) {
+
+    resetCategorySettingsButton.addEventListener(
+        "click",
+        () => {
+
+            resetSettingsCategories();
+
+        }
+    );
+
+}
+
+
+/*
+    브라우저 뒤로가기 등으로 페이지가 이미 열려 있는 상태에서
+    스크립트가 다시 초기화되는 경우에도 목록을 표시합니다.
+*/
+
+if (
+    document
+        .querySelector(
+            "#categorySettingsPage"
+        )
+        ?.classList
+        .contains(
+            "active-page"
+        )
+) {
+
+    loadSettingsCategoryApps();
+
+}
+
