@@ -804,15 +804,71 @@ function buildHourlyHeatmaps(hourlyRows) {
     };
 }
 
-function parseHourlyRoute(routeText) {
+function parseHourlyRouteEntries(routeText) {
     const text = String(routeText ?? "").trim();
 
     if (!text) return [];
 
     return text
         .split(/\s*(?:→|->|>)\s*/)
-        .map((value) => value.trim())
+        .map((value) => {
+            const raw = String(value ?? "").trim();
+
+            if (!raw) return null;
+
+            /*
+                v1.0.3 Android 형식:
+                packageName@@startTimestamp@@durationMs
+
+                예전 데이터(앱 이름만 저장된 route)도 그대로 읽는다.
+            */
+            const parts = raw.split("@@");
+
+            if (parts.length >= 3) {
+                const durationMs = Number(parts.pop());
+                const startTimestamp = Number(parts.pop());
+                const app = parts.join("@@").trim();
+
+                if (app) {
+                    return {
+                        app,
+                        startTimestamp:
+                            Number.isFinite(startTimestamp)
+                                ? startTimestamp
+                                : null,
+                        durationMs:
+                            Number.isFinite(durationMs)
+                                ? durationMs
+                                : null
+                    };
+                }
+            }
+
+            return {
+                app: raw,
+                startTimestamp: null,
+                durationMs: null
+            };
+        })
         .filter(Boolean);
+}
+
+function parseHourlyRoute(routeText) {
+    return parseHourlyRouteEntries(routeText)
+        .map((entry) => entry.app)
+        .filter(Boolean);
+}
+
+function formatTimelineClock(timestamp, fallbackHour) {
+    const value = Number(timestamp);
+
+    if (!Number.isFinite(value) || value <= 0) {
+        return `${String(fallbackHour).padStart(2, "0")}:00`;
+    }
+
+    const date = new Date(value);
+
+    return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
 function buildAppNameLookup(appRows) {
@@ -893,38 +949,69 @@ function buildHourlyTimeline(hourlyRows, hourlyAppRows, dailyAppRows, today) {
 
     todayMetrics.forEach((metric) => {
         const hour = Number(metric.hour ?? 0);
-        let route = parseHourlyRoute(metric.route)
-            .map((value) => resolveRouteAppName(value, appNameLookup))
-            .filter(Boolean);
 
-        if (route.length === 0) {
-            route = todayApps
+        let routeEntries =
+            parseHourlyRouteEntries(metric.route);
+
+        /*
+            구버전 데이터에는 세션 시간이 없을 수 있으므로
+            해당 시간대에서 가장 오래 사용한 앱을 기존 방식으로 보완한다.
+        */
+        if (routeEntries.length === 0) {
+            routeEntries = todayApps
                 .filter((item) => Number(item.hour) === hour)
                 .sort(
                     (a, b) =>
                         Number(b.usage_ms ?? 0) - Number(a.usage_ms ?? 0)
                 )
                 .slice(0, 1)
-                .map((item) => item.app_name || item.package_name);
+                .map((item) => ({
+                    app: item.package_name || item.app_name,
+                    startTimestamp: null,
+                    durationMs: Number(item.usage_ms ?? 0)
+                }));
         }
 
-        route.forEach((appName) => {
+        routeEntries.forEach((entry) => {
+            const rawApp = String(entry.app ?? "").trim();
+            const appName =
+                resolveRouteAppName(
+                    rawApp,
+                    appNameLookup
+                );
+
+            if (!appName) return;
+
             const appRow =
-                appLookup.get(`${hour}|||${appName}`)
+                appLookup.get(`${hour}|||${rawApp}`)
+                ?? appLookup.get(`${hour}|||${appName}`)
                 ?? todayApps.find(
                     (item) =>
                         Number(item.hour) === hour
                         && (
-                            item.app_name === appName
+                            item.package_name === rawApp
+                            || item.app_name === appName
                             || resolveRouteAppName(item.package_name, appNameLookup) === appName
                         )
                 );
 
+            const exactDurationMs =
+                Number(entry.durationMs);
+
+            const durationMinutes =
+                Number.isFinite(exactDurationMs)
+                && exactDurationMs > 0
+                    ? msToMinutes(exactDurationMs)
+                    : msToMinutes(appRow?.usage_ms ?? 0);
+
             timeline.push({
-                time: `${String(hour).padStart(2, "0")}:00`,
+                time: formatTimelineClock(
+                    entry.startTimestamp,
+                    hour
+                ),
                 app: appName,
                 category: appRow?.category || "기타",
-                durationMinutes: msToMinutes(appRow?.usage_ms ?? 0)
+                durationMinutes
             });
         });
     });
