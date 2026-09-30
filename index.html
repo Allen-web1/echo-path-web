@@ -144,7 +144,7 @@
                             자세히
                         </button>
 </div>
-<div class="map-placeholder">
+<div class="map-placeholder" id="homeActivitySpace" aria-label="오늘 카테고리별 실제 사용시간">
 <div class="building building-study">
 <span>학습</span>
 </div>
@@ -650,30 +650,61 @@
 </div>
 </section>
 <!-- =====================================================
-     CHALLENGE BEFORE / AFTER COMPARISON
+     AI GOAL + YESTERDAY / TODAY COMPARISON
 ===================================================== -->
 <section class="ddi-compare-section">
 <div class="section-header">
 <div>
 <p class="section-label">
-                CHALLENGE EFFECT
+                AI GOAL &amp; DAILY CHANGE
             </p>
 <h3>
-                Challenge 전·후 행동 변화 비교
+                AI 목표와 어제·오늘 행동 변화
             </h3>
 </div>
 </div>
 <p class="ddi-compare-description">
-        AI Challenge 수행 전과 후의
-        T·N·C·R 및 DDI 변화를 비교하여
-        디지털 사용 습관의 변화를 확인합니다.
+        리포트에서 AI 분석을 실행하면 Gemini가 실제 이용 데이터를 바탕으로
+        행동 목표를 제안합니다. 아래 비교값은 어제 최종 데이터와 오늘 현재까지의
+        T·N·C·R 및 DDI를 비교하며, 데이터가 동기화될 때마다 자동으로 갱신됩니다.
     </p>
+
+<div class="ddi-compare-result" id="aiGoalCard" style="margin-bottom:16px;">
+<span class="ddi-compare-result-label">
+            AI BEHAVIOR GOAL
+        </span>
+<strong id="aiGoalTitle">
+            리포트에서 AI 분석을 실행하면 목표가 생성됩니다.
+        </strong>
+<p id="aiGoalDescription">
+            AI가 오늘의 실제 사용 패턴을 분석한 뒤 측정 가능한 행동 목표를 제안합니다.
+        </p>
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px;">
+<div>
+<span style="display:block;font-size:12px;opacity:.7;">목표 지표</span>
+<strong id="aiGoalTarget">-</strong>
+</div>
+<div>
+<span style="display:block;font-size:12px;opacity:.7;">현재 상태</span>
+<strong id="aiGoalProgress">-</strong>
+</div>
+<div>
+<span style="display:block;font-size:12px;opacity:.7;">AI 분석 기준값</span>
+<strong id="aiGoalBaseline">-</strong>
+</div>
+<div>
+<span style="display:block;font-size:12px;opacity:.7;">목표 적용일</span>
+<strong id="aiGoalDate">-</strong>
+</div>
+</div>
+</div>
+
 <div class="ddi-compare-grid">
-<!-- Challenge 전 -->
+<!-- 어제 -->
 <article class="ddi-user-card">
 <div class="ddi-user-card-header">
-<span class="ddi-user-type">
-                    Challenge 전 나
+<span class="ddi-user-type" id="compareBeforeLabel">
+                    어제
                 </span>
 <strong id="compareUserADdi">
                     -
@@ -698,11 +729,12 @@
 </div>
 </div>
 </article>
-<!-- Challenge 후 -->
+
+<!-- 오늘 현재 -->
 <article class="ddi-user-card featured">
 <div class="ddi-user-card-header">
-<span class="ddi-user-type">
-                    Challenge 후 나
+<span class="ddi-user-type" id="compareAfterLabel">
+                    오늘 현재
                 </span>
 <strong id="compareUserBDdi">
                     -
@@ -728,16 +760,16 @@
 </div>
 </article>
 </div>
+
 <div class="ddi-compare-result">
 <span class="ddi-compare-result-label">
-            CHALLENGE RESULT
+            YESTERDAY → TODAY
         </span>
 <strong id="compareDdiDifference">
-            Challenge 수행 후 비교할 수 있습니다.
+            어제와 오늘 데이터를 불러오는 중입니다.
         </strong>
 <p id="compareDdiExplanation">
-            Challenge 전·후의 실제 스마트폰 행동 데이터가
-            충분히 수집되면 DDI 변화량과 변화율을 표시합니다.
+            오늘 수치는 현재 시점까지의 값이며 Realtime 동기화 시 자동으로 갱신됩니다.
         </p>
 </div>
 </section>
@@ -753,7 +785,7 @@
                             </h3>
 </div>
 </div>
-<div class="map-placeholder">
+<div class="map-placeholder" id="ddiActivitySpace" aria-label="오늘 카테고리별 실제 사용시간">
 <div class="building building-study">
 <span>학습</span>
 </div>
