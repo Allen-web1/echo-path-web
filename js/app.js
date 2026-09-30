@@ -828,7 +828,7 @@ console.log(
 
 
 /* =========================================
-   16. Challenge 전·후 실제 행동 변화 비교
+   16. AI 목표 + 어제·오늘 실제 행동 변화 비교
 ========================================= */
 
 const compareUserADdiElement =
@@ -853,110 +853,1209 @@ const compareUserBCElement =
 const compareUserBRElement =
     document.querySelector("#compareUserBR");
 
+const compareBeforeLabelElement =
+    document.querySelector("#compareBeforeLabel");
+const compareAfterLabelElement =
+    document.querySelector("#compareAfterLabel");
+
 const compareDdiDifferenceElement =
     document.querySelector("#compareDdiDifference");
 const compareDdiExplanationElement =
     document.querySelector("#compareDdiExplanation");
 
+const aiGoalTitleElement =
+    document.querySelector("#aiGoalTitle");
+const aiGoalDescriptionElement =
+    document.querySelector("#aiGoalDescription");
+const aiGoalTargetElement =
+    document.querySelector("#aiGoalTarget");
+const aiGoalProgressElement =
+    document.querySelector("#aiGoalProgress");
+const aiGoalBaselineElement =
+    document.querySelector("#aiGoalBaseline");
+const aiGoalDateElement =
+    document.querySelector("#aiGoalDate");
 
-function setChallengeCompareValues(prefix, snapshot) {
-    const isBefore = prefix === "before";
 
-    const ddiElement = isBefore ? compareUserADdiElement : compareUserBDdiElement;
-    const tElement = isBefore ? compareUserATElement : compareUserBTElement;
-    const nElement = isBefore ? compareUserANElement : compareUserBNElement;
-    const cElement = isBefore ? compareUserACElement : compareUserBCElement;
-    const rElement = isBefore ? compareUserARElement : compareUserBRElement;
+function formatComparisonDate(
+    dateString,
+    suffix = ""
+) {
 
-    if (!snapshot) {
+    const parts =
+        String(
+            dateString
+            ?? ""
+        )
+            .split("-")
+            .map(
+                Number
+            );
+
+
+    if (
+        parts.length !== 3
+        ||
+        !parts[1]
+        ||
+        !parts[2]
+    ) {
+
+        return suffix || "-";
+
+    }
+
+
+    return `${parts[1]}월 ${parts[2]}일${suffix}`;
+
+}
+
+
+function formatComparisonHours(
+    hours
+) {
+
+    const totalMinutes =
+        Math.max(
+            0,
+            Math.round(
+                Number(
+                    hours
+                    ?? 0
+                )
+                *
+                60
+            )
+        );
+
+
+    const wholeHours =
+        Math.floor(
+            totalMinutes / 60
+        );
+
+
+    const minutes =
+        totalMinutes % 60;
+
+
+    if (
+        wholeHours > 0
+    ) {
+
+        return `${wholeHours}시간 ${minutes}분`;
+
+    }
+
+
+    return `${minutes}분`;
+
+}
+
+
+function setChallengeCompareValues(
+    prefix,
+    snapshot
+) {
+
+    const isBefore =
+        prefix === "before";
+
+
+    const ddiElement =
+        isBefore
+            ? compareUserADdiElement
+            : compareUserBDdiElement;
+
+    const tElement =
+        isBefore
+            ? compareUserATElement
+            : compareUserBTElement;
+
+    const nElement =
+        isBefore
+            ? compareUserANElement
+            : compareUserBNElement;
+
+    const cElement =
+        isBefore
+            ? compareUserACElement
+            : compareUserBCElement;
+
+    const rElement =
+        isBefore
+            ? compareUserARElement
+            : compareUserBRElement;
+
+
+    if (
+        !snapshot
+    ) {
+
         if (ddiElement) ddiElement.textContent = "-";
         if (tElement) tElement.textContent = "-";
         if (nElement) nElement.textContent = "-";
         if (cElement) cElement.textContent = "-";
         if (rElement) rElement.textContent = "-";
+
         return;
+
     }
 
-    if (ddiElement) ddiElement.textContent = `${snapshot.ddi.toFixed(1)} km`;
-    if (tElement) tElement.textContent = `${snapshot.totalUsageHours.toFixed(2)}시간`;
-    if (nElement) nElement.textContent = `${snapshot.appSwitchCount}회`;
-    if (cElement) cElement.textContent = `${snapshot.categorySwitchCount}회`;
-    if (rElement) rElement.textContent = `${snapshot.repeatLoopCount}회`;
+
+    if (ddiElement) {
+        ddiElement.textContent =
+            `${Number(snapshot.ddi ?? 0).toFixed(1)} km`;
+    }
+
+    if (tElement) {
+        tElement.textContent =
+            formatComparisonHours(
+                snapshot.totalUsageHours
+            );
+    }
+
+    if (nElement) {
+        nElement.textContent =
+            `${Number(snapshot.appSwitchCount ?? 0)}회`;
+    }
+
+    if (cElement) {
+        cElement.textContent =
+            `${Number(snapshot.categorySwitchCount ?? 0)}회`;
+    }
+
+    if (rElement) {
+        rElement.textContent =
+            `${Number(snapshot.repeatLoopCount ?? 0)}회`;
+    }
+
+}
+
+
+function getDailyCategoryRatio(
+    target
+) {
+
+    const categories =
+        usageData
+            ?.periodUsage
+            ?.daily
+            ?.categories
+        ?? {};
+
+
+    const entries =
+        Object.entries(
+            categories
+        )
+            .map(
+                ([category, minutes]) => ({
+                    category,
+                    minutes:
+                        Math.max(
+                            0,
+                            Number(
+                                minutes
+                                ?? 0
+                            )
+                            || 0
+                        )
+                })
+            );
+
+
+    const totalMinutes =
+        entries.reduce(
+            (
+                sum,
+                item
+            ) =>
+                sum
+                +
+                item.minutes,
+            0
+        );
+
+
+    if (
+        totalMinutes <= 0
+    ) {
+
+        return null;
+
+    }
+
+
+    let targetMinutes =
+        0;
+
+
+    if (
+        target
+        ===
+        "learning_use_ratio"
+    ) {
+
+        targetMinutes =
+            entries
+                .filter(
+                    (item) =>
+                        item.category
+                        ===
+                        "학습"
+                )
+                .reduce(
+                    (
+                        sum,
+                        item
+                    ) =>
+                        sum
+                        +
+                        item.minutes,
+                    0
+                );
+
+    }
+
+    else if (
+        target
+        ===
+        "entertainment_use_ratio"
+    ) {
+
+        const entertainmentCategories =
+            new Set([
+                "SNS",
+                "미디어",
+                "게임"
+            ]);
+
+
+        targetMinutes =
+            entries
+                .filter(
+                    (item) =>
+                        entertainmentCategories.has(
+                            item.category
+                        )
+                )
+                .reduce(
+                    (
+                        sum,
+                        item
+                    ) =>
+                        sum
+                        +
+                        item.minutes,
+                    0
+                );
+
+    }
+
+    else {
+
+        return null;
+
+    }
+
+
+    return Number(
+        (
+            targetMinutes
+            /
+            totalMinutes
+            *
+            100
+        ).toFixed(
+            1
+        )
+    );
+
+}
+
+
+function getCurrentChallengeMetricValue(
+    metric,
+    todaySnapshot
+) {
+
+    if (
+        !todaySnapshot
+    ) {
+
+        return null;
+
+    }
+
+
+    switch (
+        metric
+    ) {
+
+        case "n_switches":
+            return Number(
+                todaySnapshot.appSwitchCount
+                ?? 0
+            );
+
+        case "r_repeat_loops":
+            return Number(
+                todaySnapshot.repeatLoopCount
+                ?? 0
+            );
+
+        case "average_usage_minutes":
+            return Number(
+                (
+                    Number(
+                        todaySnapshot.totalUsageHours
+                        ?? 0
+                    )
+                    *
+                    60
+                ).toFixed(
+                    1
+                )
+            );
+
+        case "learning_use_ratio":
+        case "entertainment_use_ratio":
+            return getDailyCategoryRatio(
+                metric
+            );
+
+        case "ddi":
+            return Number(
+                todaySnapshot.ddi
+                ?? 0
+            );
+
+        default:
+            return null;
+
+    }
+
+}
+
+
+function renderAiGoal(
+    todaySnapshot
+) {
+
+    const challenge =
+        usageData
+            ?.currentChallenge
+        ?? null;
+
+
+    if (
+        !challenge
+    ) {
+
+        if (aiGoalTitleElement) {
+            aiGoalTitleElement.textContent =
+                "리포트에서 AI 분석을 실행하면 목표가 생성됩니다.";
+        }
+
+        if (aiGoalDescriptionElement) {
+            aiGoalDescriptionElement.textContent =
+                "Gemini가 최신 T·N·C·R·DDI와 이용 패턴을 분석한 뒤 측정 가능한 행동 목표를 제안합니다.";
+        }
+
+        if (aiGoalTargetElement) {
+            aiGoalTargetElement.textContent =
+                "-";
+        }
+
+        if (aiGoalProgressElement) {
+            aiGoalProgressElement.textContent =
+                "-";
+        }
+
+        if (aiGoalBaselineElement) {
+            aiGoalBaselineElement.textContent =
+                "-";
+        }
+
+        if (aiGoalDateElement) {
+            aiGoalDateElement.textContent =
+                "-";
+        }
+
+        return;
+
+    }
+
+
+    const targetMetric =
+        challenge.targetMetric
+        ?? "";
+
+
+    const targetValue =
+        challenge.targetValue;
+
+
+    const currentValue =
+        getCurrentChallengeMetricValue(
+            targetMetric,
+            todaySnapshot
+        );
+
+
+    if (aiGoalTitleElement) {
+        aiGoalTitleElement.textContent =
+            challenge.title
+            ||
+            "AI 행동 목표";
+    }
+
+
+    if (aiGoalDescriptionElement) {
+        aiGoalDescriptionElement.textContent =
+            challenge.description
+            ||
+            "Gemini가 제안한 행동 목표입니다.";
+    }
+
+
+    if (aiGoalTargetElement) {
+        aiGoalTargetElement.textContent =
+            `${formatChallengeMetricLabel(
+                targetMetric
+            )} · ${formatChallengeMetricValue(
+                targetMetric,
+                targetValue
+            )}`;
+    }
+
+
+    if (aiGoalProgressElement) {
+        aiGoalProgressElement.textContent =
+            currentValue === null
+                ? "오늘 데이터 수집 중"
+                : `현재 ${formatChallengeMetricValue(
+                    targetMetric,
+                    currentValue
+                )}`;
+    }
+
+
+    if (aiGoalBaselineElement) {
+        aiGoalBaselineElement.textContent =
+            formatChallengeMetricValue(
+                targetMetric,
+                challenge.baselineValue
+            );
+    }
+
+
+    if (aiGoalDateElement) {
+        aiGoalDateElement.textContent =
+            challenge.challengeDate
+                ? `${formatComparisonDate(
+                    challenge.challengeDate
+                )} · ${formatChallengeStatus(
+                    challenge.status
+                )}`
+                : formatChallengeStatus(
+                    challenge.status
+                );
+    }
+
+}
+
+
+function formatSignedChange(
+    value,
+    unit,
+    digits = 0
+) {
+
+    const number =
+        Number(
+            value
+            ?? 0
+        );
+
+
+    const fixed =
+        digits > 0
+            ? Math.abs(number).toFixed(
+                digits
+            )
+            : String(
+                Math.round(
+                    Math.abs(
+                        number
+                    )
+                )
+            );
+
+
+    if (
+        number > 0
+    ) {
+
+        return `+${fixed}${unit}`;
+
+    }
+
+
+    if (
+        number < 0
+    ) {
+
+        return `-${fixed}${unit}`;
+
+    }
+
+
+    return `0${unit}`;
+
 }
 
 
 function renderChallengeComparison() {
-    const comparison = usageData.challengeComparison;
 
-    if (!compareUserADdiElement || !compareUserBDdiElement) {
+    const comparison =
+        usageData
+            ?.dailyBehaviorComparison
+        ?? null;
+
+
+    if (
+        !compareUserADdiElement
+        ||
+        !compareUserBDdiElement
+    ) {
+
         return;
+
     }
 
-    if (!comparison) {
-        setChallengeCompareValues("before", null);
-        setChallengeCompareValues("after", null);
 
-        if (compareDdiDifferenceElement) {
-            compareDdiDifferenceElement.textContent =
-                "완료된 Challenge가 생기면 실제 전·후 데이터를 비교합니다.";
+    const before =
+        comparison
+            ?.before
+        ?? null;
+
+
+    const after =
+        comparison
+            ?.after
+        ?? null;
+
+
+    if (
+        compareBeforeLabelElement
+    ) {
+
+        compareBeforeLabelElement.textContent =
+            comparison
+                ?.beforeDate
+                ? `어제 · ${formatComparisonDate(
+                    comparison.beforeDate
+                )}`
+                : "어제";
+
+    }
+
+
+    if (
+        compareAfterLabelElement
+    ) {
+
+        compareAfterLabelElement.textContent =
+            comparison
+                ?.afterDate
+                ? `오늘 현재 · ${formatComparisonDate(
+                    comparison.afterDate
+                )}`
+                : "오늘 현재";
+
+    }
+
+
+    setChallengeCompareValues(
+        "before",
+        before
+    );
+
+
+    setChallengeCompareValues(
+        "after",
+        after
+    );
+
+
+    renderAiGoal(
+        after
+    );
+
+
+    if (
+        !before
+        ||
+        !after
+    ) {
+
+        if (
+            compareDdiDifferenceElement
+        ) {
+
+            if (
+                !before
+                &&
+                after
+            ) {
+
+                compareDdiDifferenceElement.textContent =
+                    "어제 저장된 일일 데이터가 없어 아직 비교할 수 없습니다.";
+
+            }
+
+            else if (
+                before
+                &&
+                !after
+            ) {
+
+                compareDdiDifferenceElement.textContent =
+                    "오늘 데이터가 아직 동기화되지 않았습니다.";
+
+            }
+
+            else {
+
+                compareDdiDifferenceElement.textContent =
+                    "어제와 오늘 데이터를 불러오는 중입니다.";
+
+            }
+
         }
 
-        if (compareDdiExplanationElement) {
+
+        if (
+            compareDdiExplanationElement
+        ) {
+
             compareDdiExplanationElement.textContent =
-                "Challenge 수행 전날과 수행일의 실제 T/N/C/R/DDI를 사용합니다.";
+                "daily_metrics에 어제와 오늘 데이터가 모두 저장되면 자동으로 비교되며, 오늘 값은 Realtime 동기화 때마다 갱신됩니다.";
+
         }
+
+
         return;
+
     }
 
-    setChallengeCompareValues("before", comparison.before);
-    setChallengeCompareValues("after", comparison.after);
 
-    if (!comparison.hasFullComparison) {
-        if (compareDdiDifferenceElement) {
-            compareDdiDifferenceElement.textContent =
-                `${comparison.title} · 비교에 필요한 전·후 일일 데이터가 아직 충분하지 않습니다.`;
-        }
+    const ddiChange =
+        Number(
+            (
+                Number(
+                    after.ddi
+                    ?? 0
+                )
+                -
+                Number(
+                    before.ddi
+                    ?? 0
+                )
+            ).toFixed(
+                1
+            )
+        );
 
-        if (compareDdiExplanationElement) {
-            compareDdiExplanationElement.textContent =
-                comparison.evaluationSummary ||
-                "Challenge 전날과 수행일의 daily_metrics가 모두 저장되면 자동으로 비교됩니다.";
-        }
-        return;
-    }
 
-    const before = comparison.before;
-    const after = comparison.after;
-    const ddiChange = Number((after.ddi - before.ddi).toFixed(1));
-    const nChange = after.appSwitchCount - before.appSwitchCount;
-    const cChange = after.categorySwitchCount - before.categorySwitchCount;
-    const rChange = after.repeatLoopCount - before.repeatLoopCount;
+    const usageMinutesChange =
+        Math.round(
+            (
+                Number(
+                    after.totalUsageHours
+                    ?? 0
+                )
+                -
+                Number(
+                    before.totalUsageHours
+                    ?? 0
+                )
+            )
+            *
+            60
+        );
 
-    if (compareDdiDifferenceElement) {
-        const direction = ddiChange > 0 ? "증가" : ddiChange < 0 ? "감소" : "변화 없음";
+
+    const nChange =
+        Number(
+            after.appSwitchCount
+            ?? 0
+        )
+        -
+        Number(
+            before.appSwitchCount
+            ?? 0
+        );
+
+
+    const cChange =
+        Number(
+            after.categorySwitchCount
+            ?? 0
+        )
+        -
+        Number(
+            before.categorySwitchCount
+            ?? 0
+        );
+
+
+    const rChange =
+        Number(
+            after.repeatLoopCount
+            ?? 0
+        )
+        -
+        Number(
+            before.repeatLoopCount
+            ?? 0
+        );
+
+
+    if (
+        compareDdiDifferenceElement
+    ) {
+
         compareDdiDifferenceElement.textContent =
-            `${comparison.title} · DDI ${Math.abs(ddiChange).toFixed(1)} km ${direction}`;
+            `DDI ${Number(
+                before.ddi
+                ?? 0
+            ).toFixed(
+                1
+            )} km → ${Number(
+                after.ddi
+                ?? 0
+            ).toFixed(
+                1
+            )} km · ${formatSignedChange(
+                ddiChange,
+                " km",
+                1
+            )}`;
+
     }
 
-    if (compareDdiExplanationElement) {
-        const statusText = comparison.success === true
-            ? "Challenge 목표 달성"
-            : comparison.success === false
-                ? "Challenge 목표 미달성"
-                : "Challenge 평가 완료";
+
+    if (
+        compareDdiExplanationElement
+    ) {
 
         compareDdiExplanationElement.textContent =
-            `${statusText}. 앱 전환 ${nChange >= 0 ? "+" : ""}${nChange}회, ` +
-            `카테고리 전환 ${cChange >= 0 ? "+" : ""}${cChange}회, ` +
-            `반복 루프 ${rChange >= 0 ? "+" : ""}${rChange}회 변화했습니다.` +
-            (comparison.evaluationSummary ? ` ${comparison.evaluationSummary}` : "");
+            `오늘 현재 기준으로 어제보다 사용시간 ${formatSignedChange(
+                usageMinutesChange,
+                "분"
+            )}, 앱 전환 ${formatSignedChange(
+                nChange,
+                "회"
+            )}, 카테고리 전환 ${formatSignedChange(
+                cChange,
+                "회"
+            )}, 반복 루프 ${formatSignedChange(
+                rChange,
+                "회"
+            )}입니다. 오늘 값은 하루가 끝날 때까지 계속 변할 수 있습니다.`;
+
     }
 
-    console.log("Challenge 전·후 실제 비교:", comparison);
+
+    console.log(
+        "어제·오늘 실제 행동 비교:",
+        comparison
+    );
+
+}
+
+
+/* =========================================
+   16-1. 홈 / DDI 디지털 활동 공간 실제 데이터
+========================================= */
+
+const homeActivitySpaceElement =
+    document.querySelector(
+        "#homeActivitySpace"
+    );
+
+
+const ddiActivitySpaceElement =
+    document.querySelector(
+        "#ddiActivitySpace"
+    );
+
+
+function getDailyActivitySpaceEntries() {
+
+    const categoryObject =
+        usageData
+            ?.periodUsage
+            ?.daily
+            ?.categories
+        ?? {};
+
+
+    let entries =
+        Object.entries(
+            categoryObject
+        )
+            .map(
+                ([category, minutes]) => ({
+                    category:
+                        String(
+                            category
+                            || "기타"
+                        ),
+                    minutes:
+                        Math.max(
+                            0,
+                            Number(
+                                minutes
+                                ?? 0
+                            )
+                            || 0
+                        )
+                })
+            )
+            .filter(
+                (item) =>
+                    item.minutes > 0
+            );
+
+
+    if (
+        entries.length === 0
+        &&
+        Array.isArray(
+            usageData
+                ?.apps
+        )
+    ) {
+
+        const grouped =
+            new Map();
+
+
+        usageData.apps.forEach(
+            (app) => {
+
+                const category =
+                    String(
+                        app
+                            ?.category
+                        || "기타"
+                    );
+
+
+                grouped.set(
+                    category,
+                    (
+                        grouped.get(
+                            category
+                        )
+                        ?? 0
+                    )
+                    +
+                    Math.max(
+                        0,
+                        Number(
+                            app
+                                ?.usageMinutes
+                            ?? 0
+                        )
+                        || 0
+                    )
+                );
+
+            }
+        );
+
+
+        entries =
+            Array.from(
+                grouped.entries()
+            )
+                .map(
+                    ([category, minutes]) => ({
+                        category,
+                        minutes
+                    })
+                )
+                .filter(
+                    (item) =>
+                        item.minutes > 0
+                );
+
+    }
+
+
+    return entries
+        .sort(
+            (
+                a,
+                b
+            ) =>
+                b.minutes
+                -
+                a.minutes
+        )
+        .slice(
+            0,
+            4
+        );
+
+}
+
+
+function getActivitySpaceColor(
+    category
+) {
+
+    const colors = {
+        "AI·정보":
+            "#4f73ff",
+        "학습":
+            "#4f73ff",
+        "정보·검색":
+            "#4785e8",
+        "생산성":
+            "#4e9d8c",
+        "소통":
+            "#35ad6d",
+        "지도·이동":
+            "#3ca6a6",
+        "생활·도구":
+            "#6f86a8",
+        "SNS":
+            "#8f63df",
+        "미디어":
+            "#f35a5d",
+        "쇼핑":
+            "#f0a02e",
+        "게임":
+            "#e35b91",
+        "기타":
+            "#72809a"
+    };
+
+
+    return colors[
+        category
+    ]
+    ||
+    "#72809a";
+
+}
+
+
+function renderActivitySpacePreview(
+    container
+) {
+
+    if (
+        !container
+    ) {
+
+        return;
+
+    }
+
+
+    const entries =
+        getDailyActivitySpaceEntries();
+
+
+    container.innerHTML =
+        "";
+
+
+    container.style.display =
+        "flex";
+
+    container.style.alignItems =
+        "flex-end";
+
+    container.style.justifyContent =
+        "space-around";
+
+    container.style.gap =
+        "10px";
+
+    container.style.padding =
+        "24px 16px 28px";
+
+    container.style.boxSizing =
+        "border-box";
+
+
+    if (
+        entries.length === 0
+    ) {
+
+        const emptyMessage =
+            document.createElement(
+                "p"
+            );
+
+
+        emptyMessage.textContent =
+            "오늘 수집된 카테고리 사용 데이터가 없습니다.";
+
+
+        emptyMessage.style.cssText =
+            "margin:auto;text-align:center;color:#8b95a7;font-size:13px;line-height:1.5;";
+
+
+        container.appendChild(
+            emptyMessage
+        );
+
+
+        return;
+
+    }
+
+
+    const maxMinutes =
+        Math.max(
+            ...entries.map(
+                (item) =>
+                    item.minutes
+            ),
+            1
+        );
+
+
+    entries.forEach(
+        (item) => {
+
+            const bar =
+                document.createElement(
+                    "div"
+                );
+
+
+            const ratio =
+                Math.min(
+                    1,
+                    item.minutes
+                    /
+                    maxMinutes
+                );
+
+
+            const heightPercent =
+                28
+                +
+                Math.sqrt(
+                    ratio
+                )
+                *
+                62;
+
+
+            bar.className =
+                "building";
+
+
+            bar.style.cssText =
+                [
+                    `height:${heightPercent.toFixed(1)}%`,
+                    "min-height:54px",
+                    "flex:1 1 0",
+                    "max-width:24%",
+                    `background:${getActivitySpaceColor(
+                        item.category
+                    )}`,
+                    "position:relative",
+                    "display:flex",
+                    "align-items:flex-end",
+                    "justify-content:center",
+                    "padding:10px 4px",
+                    "border-radius:14px 14px 4px 4px",
+                    "box-sizing:border-box"
+                ].join(
+                    ";"
+                );
+
+
+            bar.title =
+                `${item.category} · ${Math.round(
+                    item.minutes
+                )}분`;
+
+
+            const label =
+                document.createElement(
+                    "span"
+                );
+
+
+            label.textContent =
+                item.category;
+
+
+            label.style.cssText =
+                "font-size:12px;font-weight:800;text-align:center;line-height:1.15;color:#fff;word-break:keep-all;";
+
+
+            const value =
+                document.createElement(
+                    "small"
+                );
+
+
+            value.textContent =
+                `${Math.round(
+                    item.minutes
+                )}분`;
+
+
+            value.style.cssText =
+                "position:absolute;top:8px;left:0;right:0;text-align:center;font-size:10px;font-weight:700;color:rgba(255,255,255,.92);";
+
+
+            bar.append(
+                value,
+                label
+            );
+
+
+            container.appendChild(
+                bar
+            );
+
+        }
+    );
+
+}
+
+
+function renderActivitySpacePreviews() {
+
+    renderActivitySpacePreview(
+        homeActivitySpaceElement
+    );
+
+
+    renderActivitySpacePreview(
+        ddiActivitySpaceElement
+    );
+
 }
 
 
 renderChallengeComparison();
+renderActivitySpacePreviews();
 
 
 /* =========================================
@@ -5752,6 +6851,7 @@ function renderRealtimeCoreUi() {
 
     renderContributionInsight();
     renderChallengeComparison();
+    renderActivitySpacePreviews();
 
 
     /*
