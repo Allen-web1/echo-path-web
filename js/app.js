@@ -286,8 +286,7 @@ function openPage(
 
     /*
         다른 기기에서 실행한 AI 분석 결과가 있을 수 있으므로
-        리포트 페이지에 들어갈 때 Supabase 최신 상태를 한 번 다시 읽습니다.
-        Realtime publication 설정과 무관하게 기기간 동기화를 보완합니다.
+        리포트 페이지 진입 시 Supabase 최신 상태를 다시 읽습니다.
     */
     if (
         pageId === "reportPage"
@@ -3159,10 +3158,6 @@ let reportSelfAwarenessAiInterpretation =
 
 /* =========================================
    저장된 오늘 AI 결과 기기간 복원
-
-   AI 분석 버튼은 "새 분석 / 재분석 실행" 용도입니다.
-   한 기기에서 이미 오늘 AI 분석을 실행해 Supabase에 저장했다면
-   같은 계정의 다른 기기에서도 그 저장 결과를 바로 표시합니다.
 ========================================= */
 
 function restoreSavedReportAiState(
@@ -3178,30 +3173,24 @@ function restoreSavedReportAiState(
 
 
     const hasStoredAnalysis =
-        Boolean(
-            aiAnalysis
-        )
+        Boolean(aiAnalysis)
         &&
         Boolean(
             String(
-                aiAnalysis
-                    ?.summary
+                aiAnalysis?.summary
                 ?? ""
             ).trim()
         )
         &&
         Boolean(
             String(
-                aiAnalysis
-                    ?.habitPattern
+                aiAnalysis?.habitPattern
                 ?? ""
             ).trim()
         );
 
 
-    if (
-        !hasStoredAnalysis
-    ) {
+    if (!hasStoredAnalysis) {
 
         reportAiUnlocked =
             false;
@@ -3214,28 +3203,18 @@ function restoreSavedReportAiState(
     }
 
 
-    /*
-        supabase-data.js에서 오늘 daily 분석만 넘기지만,
-        방어적으로 날짜를 한 번 더 확인합니다.
-    */
-
     const usageDate =
         String(
-            usageData
-                ?.date
+            usageData?.date
             ?? ""
         ).trim();
 
 
     const analysisDate =
         String(
-            aiAnalysis
-                ?.analysisDate
+            aiAnalysis?.analysisDate
             ??
-            aiAnalysis
-                ?.analyzedAt
-                ?.slice
-                ?.(0, 10)
+            aiAnalysis?.analyzedAt?.slice?.(0, 10)
             ??
             ""
         ).trim();
@@ -3265,8 +3244,7 @@ function restoreSavedReportAiState(
 
 
     reportSelfAwarenessAiInterpretation =
-        aiAnalysis
-            ?.selfAwarenessInterpretation
+        aiAnalysis?.selfAwarenessInterpretation
         ?? null;
 
 
@@ -4130,11 +4108,96 @@ function buildReportAiInputSnapshot() {
                 ),
 
 
+        /*
+            전날 실제 행동과 가장 최근 Challenge 평가 결과를
+            오늘 Gemini 분석에 함께 전달합니다.
+        */
+        previous_day_behavior:
+            usageData
+                ?.dailyBehaviorComparison
+                ?.before
+                ? {
+
+                    date:
+                        usageData.dailyBehaviorComparison.beforeDate
+                        ?? null,
+
+                    total_usage_hours:
+                        safeReportNumber(
+                            usageData.dailyBehaviorComparison.before.totalUsageHours
+                        ),
+
+                    n_switches:
+                        safeReportNumber(
+                            usageData.dailyBehaviorComparison.before.appSwitchCount
+                        ),
+
+                    c_category_switches:
+                        safeReportNumber(
+                            usageData.dailyBehaviorComparison.before.categorySwitchCount
+                        ),
+
+                    r_repeat_loops:
+                        safeReportNumber(
+                            usageData.dailyBehaviorComparison.before.repeatLoopCount
+                        ),
+
+                    ddi:
+                        safeReportNumber(
+                            usageData.dailyBehaviorComparison.before.ddi
+                        )
+
+                }
+                : null,
+
+
         eeg:
             null,
 
+
         previous_challenge:
-            null
+            usageData
+                ?.challengeComparison
+                ? {
+
+                    challenge_date:
+                        usageData.challengeComparison.challengeDate
+                        ?? null,
+
+                    title:
+                        usageData.challengeComparison.title
+                        ?? "",
+
+                    target_metric:
+                        usageData.challengeComparison.targetMetric
+                        ?? "",
+
+                    target_value:
+                        usageData.challengeComparison.targetValue
+                        ?? null,
+
+                    result_value:
+                        usageData.challengeComparison.resultValue
+                        ?? null,
+
+                    status:
+                        usageData.challengeComparison.status
+                        ?? "",
+
+                    success:
+                        usageData.challengeComparison.success
+                        ?? null,
+
+                    evaluation_summary:
+                        usageData.challengeComparison.evaluationSummary
+                        ?? "",
+
+                    next_recommendation:
+                        usageData.challengeComparison.nextRecommendation
+                        ?? ""
+
+                }
+                : null
 
     };
 
@@ -7102,10 +7165,6 @@ async function refreshEchoPathDataFromRealtime(
             );
 
 
-        /*
-            다른 기기에서 저장된 AI 분석도 같은 usageData 재조회에서
-            복원하여 PC/태블릿 화면에 동일하게 표시합니다.
-        */
         restoreSavedReportAiState();
 
 
@@ -7212,12 +7271,6 @@ await startRealtimeAfterUiReady();
 
 /* =========================================
    기기간 동기화 보완
-
-   - PC 탭을 다시 선택했을 때
-   - WebView가 다시 보이게 되었을 때
-   최신 Supabase 상태를 한 번 재조회합니다.
-
-   지속 polling은 하지 않아 불필요한 DB 호출을 늘리지 않습니다.
 ========================================= */
 
 let lastCrossDeviceRefreshAt =
@@ -7233,9 +7286,7 @@ async function refreshCrossDeviceState(
 
 
     if (
-        now
-        -
-        lastCrossDeviceRefreshAt
+        now - lastCrossDeviceRefreshAt
         <
         1500
     ) {
@@ -7272,9 +7323,7 @@ document.addEventListener(
     "visibilitychange",
     () => {
 
-        if (
-            !document.hidden
-        ) {
+        if (!document.hidden) {
 
             void refreshCrossDeviceState(
                 "document-visible"
