@@ -1611,6 +1611,74 @@ function buildSelfAwarenessComparison(
 }
 
 
+
+/* =========================================
+   저장된 AI 부가 결과 복원
+========================================= */
+
+function parseStoredAiEnvelope(
+    value
+) {
+
+    if (
+        value
+        &&
+        typeof value === "object"
+        &&
+        !Array.isArray(
+            value
+        )
+    ) {
+
+        return value;
+
+    }
+
+
+    if (
+        typeof value !== "string"
+        ||
+        !value.trim()
+    ) {
+
+        return null;
+
+    }
+
+
+    try {
+
+        const parsed =
+            JSON.parse(
+                value
+            );
+
+
+        return (
+            parsed
+            &&
+            typeof parsed === "object"
+            &&
+            !Array.isArray(
+                parsed
+            )
+        )
+            ? parsed
+            : null;
+
+    }
+
+    catch (
+        error
+    ) {
+
+        return null;
+
+    }
+
+}
+
+
 export async function loadEchoPathUsageData() {
 
     const user =
@@ -2052,13 +2120,27 @@ export async function loadEchoPathUsageData() {
         );
 
 
+    /*
+        AI 리포트는 "오늘 사용자가 실행한 일간 분석"만 표시합니다.
+        어제/과거 분석이 오늘 리포트에 섞이지 않도록 날짜와 period를 함께 확인합니다.
+    */
     const latestAiAnalysis =
         aiAnalysisRows.find((item) =>
             item
+            && item.analysis_date === today
+            && item.period_type === "daily"
+            && item.analyzed_at
             && item.summary
             && item.habit_pattern
         )
         ?? null;
+
+
+    const latestAiEnvelope =
+        parseStoredAiEnvelope(
+            latestAiAnalysis
+                ?.perception_gap
+        );
 
     const activeChallenge =
         challengeRows.find((item) => item?.status === "active")
@@ -2078,7 +2160,21 @@ export async function loadEchoPathUsageData() {
             summary: latestAiAnalysis.summary ?? "",
             habitPattern: latestAiAnalysis.habit_pattern ?? "",
             learningDirection: latestAiAnalysis.learning_direction ?? "",
-            solutionSuggestions: latestAiAnalysis.solution_suggestions ?? ""
+            solutionSuggestions: latestAiAnalysis.solution_suggestions ?? "",
+
+            /*
+                Gemini 자기인식 비교 문장은 perception_gap JSON envelope에
+                저장되어 있으므로 다른 기기에서도 다시 읽어 사용합니다.
+            */
+            selfAwarenessInterpretation:
+                latestAiEnvelope
+                    ?.self_awareness_interpretation
+                ?? null,
+
+            analyzedInputFingerprint:
+                latestAiEnvelope
+                    ?.analyzed_input_fingerprint
+                ?? null
         }
         : null;
 
