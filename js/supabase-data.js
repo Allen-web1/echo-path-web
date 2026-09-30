@@ -1142,6 +1142,112 @@ function metricRowToChallengeSnapshot(metric) {
 }
 
 
+
+function buildDailyBehaviorComparison(
+    metricRows,
+    today
+) {
+
+    const todayDate =
+        String(
+            today
+            ?? ""
+        )
+            .trim();
+
+
+    if (
+        !todayDate
+    ) {
+
+        return null;
+
+    }
+
+
+    const yesterdayDate =
+        getPreviousDateString(
+            todayDate
+        );
+
+
+    const yesterdayMetric =
+        (
+            metricRows
+            ?? []
+        )
+            .find(
+                (item) =>
+                    item.record_date
+                    ===
+                    yesterdayDate
+            )
+        ?? null;
+
+
+    const todayMetric =
+        (
+            metricRows
+            ?? []
+        )
+            .find(
+                (item) =>
+                    item.record_date
+                    ===
+                    todayDate
+            )
+        ?? null;
+
+
+    const before =
+        metricRowToChallengeSnapshot(
+            yesterdayMetric
+        );
+
+
+    const after =
+        metricRowToChallengeSnapshot(
+            todayMetric
+        );
+
+
+    return {
+
+        beforeDate:
+            yesterdayDate,
+
+        afterDate:
+            todayDate,
+
+        before,
+
+        after,
+
+        hasYesterday:
+            Boolean(
+                before
+            ),
+
+        hasToday:
+            Boolean(
+                after
+            ),
+
+        hasFullComparison:
+            Boolean(
+                before
+                &&
+                after
+            ),
+
+        todayIsPartial:
+            true
+
+    };
+
+}
+
+
 function buildChallengeComparison(challengeRows, evaluationRows, metricRows) {
     if (!Array.isArray(challengeRows) || challengeRows.length === 0) {
         return null;
@@ -1938,6 +2044,14 @@ export async function loadEchoPathUsageData() {
         metricRows
     );
 
+
+    const dailyBehaviorComparison =
+        buildDailyBehaviorComparison(
+            metricRows,
+            today
+        );
+
+
     const latestAiAnalysis =
         aiAnalysisRows.find((item) =>
             item
@@ -2268,6 +2382,9 @@ export async function loadEchoPathUsageData() {
 
 
         challengeComparison,
+
+
+        dailyBehaviorComparison,
 
 
         aiAnalysis,
