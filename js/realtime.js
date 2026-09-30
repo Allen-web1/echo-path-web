@@ -14,6 +14,7 @@ import {
 
 
 let realtimeChannel = null;
+let aiRealtimeChannel = null;
 let refreshTimer = null;
 let pendingChange = null;
 
@@ -124,6 +125,17 @@ export async function startEchoPathRealtime(
         );
 
         realtimeChannel =
+            null;
+    }
+
+
+    if (aiRealtimeChannel) {
+
+        await supabase.removeChannel(
+            aiRealtimeChannel
+        );
+
+        aiRealtimeChannel =
             null;
     }
 
@@ -281,6 +293,82 @@ export async function startEchoPathRealtime(
                     );
                 }
             );
+
+
+    /*
+        AI 관련 Realtime은 핵심 사용 데이터 채널과 분리합니다.
+
+        Supabase Dashboard에서 AI 테이블의 Realtime publication이
+        아직 켜져 있지 않아도 daily/hourly 핵심 Realtime 채널에는
+        영향을 주지 않습니다.
+    */
+
+    aiRealtimeChannel =
+        supabase
+            .channel(
+                `echo-path-ai-${user.id}`
+            )
+
+
+            /* Gemini AI 분석 결과 */
+            .on(
+                "postgres_changes",
+                {
+                    event: "*",
+                    schema: "public",
+                    table: "ai_analysis",
+                    filter: `user_id=eq.${user.id}`
+                },
+                (payload) =>
+                    handleChange(
+                        "ai_analysis",
+                        payload
+                    )
+            )
+
+
+            /* Gemini가 생성한 AI Challenge */
+            .on(
+                "postgres_changes",
+                {
+                    event: "*",
+                    schema: "public",
+                    table: "ai_challenges",
+                    filter: `user_id=eq.${user.id}`
+                },
+                (payload) =>
+                    handleChange(
+                        "ai_challenges",
+                        payload
+                    )
+            )
+
+
+            .subscribe(
+                (status) => {
+
+                    if (
+                        status === "SUBSCRIBED"
+                    ) {
+
+                        console.log(
+                            "Echo Path AI Realtime 상태:",
+                            status
+                        );
+
+                    }
+
+                    else {
+
+                        console.warn(
+                            "Echo Path AI Realtime 상태:",
+                            status
+                        );
+
+                    }
+
+                }
+            );
 }
 
 
@@ -305,18 +393,28 @@ export async function stopEchoPathRealtime() {
         null;
 
 
-    if (!realtimeChannel) {
+    if (realtimeChannel) {
 
-        return;
+        await supabase.removeChannel(
+            realtimeChannel
+        );
+
+        realtimeChannel =
+            null;
+
     }
 
 
-    await supabase.removeChannel(
-        realtimeChannel
-    );
+    if (aiRealtimeChannel) {
 
-    realtimeChannel =
-        null;
+        await supabase.removeChannel(
+            aiRealtimeChannel
+        );
+
+        aiRealtimeChannel =
+            null;
+
+    }
 
 
     console.log(
