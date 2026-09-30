@@ -284,6 +284,23 @@ function openPage(
     );
 
 
+    /*
+        다른 기기에서 실행한 AI 분석 결과가 있을 수 있으므로
+        리포트 페이지에 들어갈 때 Supabase 최신 상태를 한 번 다시 읽습니다.
+        Realtime publication 설정과 무관하게 기기간 동기화를 보완합니다.
+    */
+    if (
+        pageId === "reportPage"
+    ) {
+
+        void refreshEchoPathDataFromRealtime({
+            source:
+                "report-page-open"
+        });
+
+    }
+
+
     /* =====================================
        DDI 페이지 최초 진입 시
        실제 데이터로 3D 도시 생성
@@ -3141,6 +3158,139 @@ let reportSelfAwarenessAiInterpretation =
 
 
 /* =========================================
+   저장된 오늘 AI 결과 기기간 복원
+
+   AI 분석 버튼은 "새 분석 / 재분석 실행" 용도입니다.
+   한 기기에서 이미 오늘 AI 분석을 실행해 Supabase에 저장했다면
+   같은 계정의 다른 기기에서도 그 저장 결과를 바로 표시합니다.
+========================================= */
+
+function restoreSavedReportAiState(
+    {
+        updateStatus = true
+    } = {}
+) {
+
+    const aiAnalysis =
+        usageData
+            ?.aiAnalysis
+        ?? null;
+
+
+    const hasStoredAnalysis =
+        Boolean(
+            aiAnalysis
+        )
+        &&
+        Boolean(
+            String(
+                aiAnalysis
+                    ?.summary
+                ?? ""
+            ).trim()
+        )
+        &&
+        Boolean(
+            String(
+                aiAnalysis
+                    ?.habitPattern
+                ?? ""
+            ).trim()
+        );
+
+
+    if (
+        !hasStoredAnalysis
+    ) {
+
+        reportAiUnlocked =
+            false;
+
+        reportSelfAwarenessAiInterpretation =
+            null;
+
+        return false;
+
+    }
+
+
+    /*
+        supabase-data.js에서 오늘 daily 분석만 넘기지만,
+        방어적으로 날짜를 한 번 더 확인합니다.
+    */
+
+    const usageDate =
+        String(
+            usageData
+                ?.date
+            ?? ""
+        ).trim();
+
+
+    const analysisDate =
+        String(
+            aiAnalysis
+                ?.analysisDate
+            ??
+            aiAnalysis
+                ?.analyzedAt
+                ?.slice
+                ?.(0, 10)
+            ??
+            ""
+        ).trim();
+
+
+    if (
+        usageDate
+        &&
+        analysisDate
+        &&
+        usageDate !== analysisDate
+    ) {
+
+        reportAiUnlocked =
+            false;
+
+        reportSelfAwarenessAiInterpretation =
+            null;
+
+        return false;
+
+    }
+
+
+    reportAiUnlocked =
+        true;
+
+
+    reportSelfAwarenessAiInterpretation =
+        aiAnalysis
+            ?.selfAwarenessInterpretation
+        ?? null;
+
+
+    if (
+        updateStatus
+        &&
+        reportAiStatusElement
+    ) {
+
+        reportAiStatusElement.textContent =
+            "오늘 저장된 AI 분석 결과를 불러왔습니다.";
+
+        reportAiStatusElement.dataset.state =
+            "success";
+
+    }
+
+
+    return true;
+
+}
+
+
+/* =========================================
    날짜 / 숫자 보정
 ========================================= */
 
@@ -4632,6 +4782,8 @@ function applyReportSelfAwarenessAiText() {
         !interpretation
     ) {
 
+        maskSelfAwarenessAiInterpretation();
+
         return;
 
     }
@@ -5436,7 +5588,7 @@ function renderAiReport() {
 
         reportCoreAnalysisElement.textContent =
             aiAnalysis?.summary
-            || "저장된 AI 분석 결과가 아직 없습니다. Android 앱에서 AI 분석을 실행하면 이곳에 실제 분석 결과가 표시됩니다.";
+            || "저장된 AI 분석 결과가 아직 없습니다. AI 분석을 실행하면 이곳에 실제 분석 결과가 표시됩니다.";
 
     }
 
@@ -5619,7 +5771,7 @@ function renderAiReport() {
 
         reportChallengeDescriptionElement.textContent =
             challenge?.description
-            || "Android 앱에서 일간 AI 분석을 실행하면 Challenge가 생성되고 이곳에 표시됩니다.";
+            || "일간 AI 분석을 실행하면 Challenge가 생성되고 이곳에 표시됩니다.";
 
     }
 
@@ -5697,6 +5849,8 @@ function renderAiReport() {
 ========================================= */
 
 setupReportAiButton();
+
+restoreSavedReportAiState();
 
 renderAiReport();
 
@@ -6948,6 +7102,13 @@ async function refreshEchoPathDataFromRealtime(
             );
 
 
+        /*
+            다른 기기에서 저장된 AI 분석도 같은 usageData 재조회에서
+            복원하여 PC/태블릿 화면에 동일하게 표시합니다.
+        */
+        restoreSavedReportAiState();
+
+
         renderRealtimeCoreUi();
 
 
@@ -7047,6 +7208,82 @@ function finalizeEchoPathApp() {
 finalizeEchoPathApp();
 
 await startRealtimeAfterUiReady();
+
+
+/* =========================================
+   기기간 동기화 보완
+
+   - PC 탭을 다시 선택했을 때
+   - WebView가 다시 보이게 되었을 때
+   최신 Supabase 상태를 한 번 재조회합니다.
+
+   지속 polling은 하지 않아 불필요한 DB 호출을 늘리지 않습니다.
+========================================= */
+
+let lastCrossDeviceRefreshAt =
+    0;
+
+
+async function refreshCrossDeviceState(
+    source
+) {
+
+    const now =
+        Date.now();
+
+
+    if (
+        now
+        -
+        lastCrossDeviceRefreshAt
+        <
+        1500
+    ) {
+
+        return;
+
+    }
+
+
+    lastCrossDeviceRefreshAt =
+        now;
+
+
+    await refreshEchoPathDataFromRealtime({
+        source
+    });
+
+}
+
+
+window.addEventListener(
+    "focus",
+    () => {
+
+        void refreshCrossDeviceState(
+            "window-focus"
+        );
+
+    }
+);
+
+
+document.addEventListener(
+    "visibilitychange",
+    () => {
+
+        if (
+            !document.hidden
+        ) {
+
+            void refreshCrossDeviceState(
+                "document-visible"
+            );
+
+        }
+
+    }
+);
 
 
 /* =========================================
