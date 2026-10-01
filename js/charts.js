@@ -469,86 +469,15 @@ function renderAppUsageChart(
 
 
 /* =========================================
-   5. 전체 카테고리 활동 균형 계산
+   5. 생산적 활동 / 오락 활동 계산
 ========================================= */
 
 function calculateActivityBalance(
     usageData
 ) {
 
-    const dailyCategories =
-        usageData
-            ?.periodUsage
-            ?.daily
-            ?.categories
-        ?? null;
-
-
-    /*
-        오늘의 카테고리별 실제 사용시간을 우선 사용합니다.
-
-        periodUsage.daily.categories에는
-        Supabase의 실제 앱 사용시간과
-        사용자가 설정한 앱 카테고리 재분류가 반영됩니다.
-    */
-
-    if (
-        dailyCategories
-        &&
-        typeof dailyCategories === "object"
-    ) {
-
-        return Object
-            .entries(
-                dailyCategories
-            )
-            .map(
-                (
-                    [
-                        category,
-                        minutes
-                    ]
-                ) => ({
-
-                    category:
-                        category
-                        || "기타",
-
-                    minutes:
-                        Number(
-                            minutes
-                            ?? 0
-                        )
-
-                })
-            )
-            .filter(
-                (item) =>
-                    Number.isFinite(
-                        item.minutes
-                    )
-                    &&
-                    item.minutes > 0
-            )
-            .sort(
-                (
-                    a,
-                    b
-                ) =>
-                    b.minutes
-                    -
-                    a.minutes
-            );
-
-    }
-
-
-    /*
-        구버전 데이터 또는 periodUsage가 없는 경우를 위한 fallback
-    */
-
-    const categoryMap =
-        new Map();
+    let productiveMinutes = 0;
+    let entertainmentMinutes = 0;
 
 
     const apps =
@@ -559,87 +488,48 @@ function calculateActivityBalance(
     apps.forEach(
         (app) => {
 
-            const category =
-                app.category
-                || "기타";
-
-
-            const usageMinutes =
-                Number(
-                    app.usageMinutes
-                    ?? 0
-                );
-
 
             if (
-                !Number.isFinite(
-                    usageMinutes
-                )
-                ||
-                usageMinutes <= 0
+                app.activityType
+                ===
+                "productive"
             ) {
 
-                return;
+                productiveMinutes +=
+                    app.usageMinutes;
 
             }
 
 
-            const currentMinutes =
-                categoryMap.get(
-                    category
-                )
-                ?? 0;
+            else if (
+                app.activityType
+                ===
+                "entertainment"
+            ) {
 
+                entertainmentMinutes +=
+                    app.usageMinutes;
 
-            categoryMap.set(
-                category,
-                currentMinutes
-                +
-                usageMinutes
-            );
+            }
 
         }
     );
 
 
-    return Array
-        .from(
-            categoryMap.entries()
-        )
-        .map(
-            (
-                [
-                    category,
-                    minutes
-                ]
-            ) => ({
+    return {
 
-                category,
+        productiveMinutes,
 
-                minutes
+        entertainmentMinutes
 
-            })
-        )
-        .filter(
-            (item) =>
-                item.minutes > 0
-        )
-        .sort(
-            (
-                a,
-                b
-            ) =>
-                b.minutes
-                -
-                a.minutes
-        );
+    };
 
 }
 
 
 
 /* =========================================
-   6. 전체 카테고리 활동 균형 도넛그래프
+   6. 생산적 활동 / 오락 활동 도넛그래프
 ========================================= */
 
 function renderActivityBalanceChart(
@@ -669,55 +559,7 @@ function renderActivityBalanceChart(
         );
 
 
-    /*
-        기존 HTML 구조는 그대로 사용하되
-        제목과 접근성 문구를 실제 기능에 맞게 변경합니다.
-    */
-
-    const chartCard =
-        canvas.closest(
-            ".chart-card"
-        );
-
-
-    const titleElement =
-        chartCard
-            ?.querySelector(
-                "h3"
-            );
-
-
-    if (titleElement) {
-
-        titleElement.textContent =
-            "카테고리별 활동 균형";
-
-    }
-
-
-    canvas.setAttribute(
-        "aria-label",
-        "카테고리별 앱 사용시간 비율"
-    );
-
-
-    const labels =
-        balance.map(
-            (item) =>
-                item.category
-        );
-
-
-    const values =
-        balance.map(
-            (item) =>
-                item.minutes
-        );
-
-
-    if (
-        activityBalanceChartInstance
-    ) {
+    if (activityBalanceChartInstance) {
 
         activityBalanceChartInstance.destroy();
 
@@ -729,26 +571,35 @@ function renderActivityBalanceChart(
             canvas,
             {
 
-                type:
-                    "doughnut",
+                type: "doughnut",
 
 
                 data: {
 
-                    labels,
+                    labels: [
+
+                        "생산적 활동",
+
+                        "오락 활동"
+
+                    ],
+
 
                     datasets: [
 
                         {
 
-                            label:
-                                "사용 시간(분)",
+                            data: [
 
-                            data:
-                                values,
+                                balance
+                                    .productiveMinutes,
 
-                            borderWidth:
-                                2
+                                balance
+                                    .entertainmentMinutes
+
+                            ],
+
+                            borderWidth: 2
 
                         }
 
@@ -759,11 +610,11 @@ function renderActivityBalanceChart(
 
                 options: {
 
-                    responsive:
-                        true,
+                    responsive: true,
 
                     maintainAspectRatio:
                         false,
+
 
                     cutout:
                         "65%",
@@ -774,49 +625,7 @@ function renderActivityBalanceChart(
                         legend: {
 
                             position:
-                                "bottom",
-
-                            labels: {
-
-                                usePointStyle:
-                                    true,
-
-                                boxWidth:
-                                    12,
-
-                                padding:
-                                    12
-
-                            }
-
-                        },
-
-
-                        tooltip: {
-
-                            callbacks: {
-
-                                label:
-                                    function(
-                                        context
-                                    ) {
-
-                                        const minutes =
-                                            Number(
-                                                context.raw
-                                                ?? 0
-                                            );
-
-
-                                        return (
-                                            `${context.label}: `
-                                            +
-                                            `${formatMinutes(minutes)}`
-                                        );
-
-                                    }
-
-                            }
+                                "bottom"
 
                         }
 
@@ -828,128 +637,43 @@ function renderActivityBalanceChart(
         );
 
 
-    /*
-        원형 그래프 아래에도
-        오늘 실제 사용한 카테고리별 시간을 모두 표시합니다.
-    */
+    /* 생산적 활동 시간 표시 */
 
-    const summaryElement =
-        chartCard
-            ?.querySelector(
-                ".activity-summary"
+    const productiveElement =
+        document.querySelector(
+            "#productiveTime"
+        );
+
+
+    if (productiveElement) {
+
+        productiveElement.textContent =
+            formatMinutes(
+                balance.productiveMinutes
             );
-
-
-    if (!summaryElement) {
-
-        return;
 
     }
 
 
-    summaryElement.innerHTML =
-        "";
+    /* 오락 활동 시간 표시 */
 
-
-    if (
-        balance.length === 0
-    ) {
-
-        const emptyItem =
-            document.createElement(
-                "div"
-            );
-
-
-        const emptyLabel =
-            document.createElement(
-                "span"
-            );
-
-
-        emptyLabel.textContent =
-            "오늘";
-
-
-        const emptyValue =
-            document.createElement(
-                "strong"
-            );
-
-
-        emptyValue.textContent =
-            "사용 데이터 없음";
-
-
-        emptyItem.appendChild(
-            emptyLabel
+    const entertainmentElement =
+        document.querySelector(
+            "#entertainmentTime"
         );
 
 
-        emptyItem.appendChild(
-            emptyValue
-        );
+    if (entertainmentElement) {
 
-
-        summaryElement.appendChild(
-            emptyItem
-        );
-
-
-        return;
+        entertainmentElement.textContent =
+            formatMinutes(
+                balance.entertainmentMinutes
+            );
 
     }
-
-
-    balance.forEach(
-        (item) => {
-
-            const summaryItem =
-                document.createElement(
-                    "div"
-                );
-
-
-            const categoryElement =
-                document.createElement(
-                    "span"
-                );
-
-
-            categoryElement.textContent =
-                item.category;
-
-
-            const timeElement =
-                document.createElement(
-                    "strong"
-                );
-
-
-            timeElement.textContent =
-                formatMinutes(
-                    item.minutes
-                );
-
-
-            summaryItem.appendChild(
-                categoryElement
-            );
-
-
-            summaryItem.appendChild(
-                timeElement
-            );
-
-
-            summaryElement.appendChild(
-                summaryItem
-            );
-
-        }
-    );
 
 }
+
 
 
 
@@ -2299,12 +2023,26 @@ function renderMonthlyDdiTrendChart(
 
                             ticks: {
 
+                                /*
+                                    부동소수점 오차로
+                                    0.9400000000001 같은 값이 표시되지 않도록
+                                    Y축 눈금은 소수점 둘째 자리까지만 표시합니다.
+                                */
+                                precision:
+                                    2,
+
                                 callback:
                                     function(
                                         value
                                     ) {
 
-                                        return `${value} km`;
+                                        return (
+                                            `${Number(
+                                                value
+                                            ).toFixed(
+                                                2
+                                            )} km`
+                                        );
 
                                     }
 
@@ -2369,7 +2107,7 @@ export function renderStatistics(
     );
 
 
-    /* 카테고리별 활동 균형 */
+    /* 생산 / 오락 */
 
     renderActivityBalanceChart(
         usageData
