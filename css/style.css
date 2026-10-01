@@ -3841,10 +3841,7 @@ button {
 }
 
 .category-app-item {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 122px;
-    gap: 10px;
-    align-items: center;
+    display: block;
 
     padding: 12px;
 
@@ -3892,6 +3889,29 @@ button {
     color: #718096;
 
     font-size: 10px;
+}
+
+.category-classification-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+
+    margin-top: 10px;
+}
+
+.category-classification-field {
+    min-width: 0;
+}
+
+.category-classification-field > span {
+    display: block;
+
+    margin: 0 0 5px 2px;
+
+    color: #718096;
+
+    font-size: 9px;
+    font-weight: 800;
 }
 
 .category-select {
@@ -4118,12 +4138,15 @@ button {
         padding: 15px;
     }
 
-    .category-app-item {
-        grid-template-columns: 1fr;
+    .category-classification-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 7px;
     }
 
     .category-select {
         min-height: 42px;
+        padding: 0 7px;
+        font-size: 10px;
     }
 
     .privacy-data-grid,
