@@ -36,6 +36,50 @@ let periodButtonsInitialized =
    270분 → 4h 30m
 ========================================= */
 
+function areChartArraysEqual(
+    currentValues,
+    nextValues
+) {
+
+    const current =
+        Array.from(
+            currentValues
+            ?? []
+        );
+
+
+    const next =
+        Array.from(
+            nextValues
+            ?? []
+        );
+
+
+    if (
+        current.length
+        !==
+        next.length
+    ) {
+
+        return false;
+
+    }
+
+
+    return current.every(
+        (
+            value,
+            index
+        ) =>
+            value
+            ===
+            next[index]
+    );
+
+}
+
+
+
 function formatMinutes(minutes) {
 
     const hours =
@@ -193,20 +237,64 @@ function renderPeriodUsageChart(
 
     if (periodUsageChartInstance) {
 
+        const sameLabels =
+            areChartArraysEqual(
+                periodUsageChartInstance
+                    .data
+                    .labels,
+                categories
+            );
+
+
+        const sameValues =
+            areChartArraysEqual(
+                periodUsageChartInstance
+                    .data
+                    .datasets[0]
+                    .data,
+                values
+            );
+
+
+        /*
+            Realtime 이벤트가 와도 실제 그래프 값이 같으면
+            Chart.js 렌더링 자체를 다시 실행하지 않습니다.
+        */
+        if (
+            sameLabels
+            &&
+            sameValues
+        ) {
+
+            return;
+
+        }
+
+
         periodUsageChartInstance
             .data
             .labels =
-            categories;
+            [
+                ...categories
+            ];
 
 
         periodUsageChartInstance
             .data
             .datasets[0]
             .data =
-            values;
+            [
+                ...values
+            ];
 
 
-        periodUsageChartInstance.update();
+        /*
+            실제 값이 바뀐 경우에도 애니메이션 없이
+            현재 그래프의 데이터만 조용히 갱신합니다.
+        */
+        periodUsageChartInstance.update(
+            "none"
+        );
 
         return;
 
@@ -434,11 +522,66 @@ function renderAppUsageChart(
         );
 
 
-    /* 기존 그래프 제거 */
+    /*
+        기존 그래프를 destroy()하지 않습니다.
+        Realtime으로 값이 바뀐 경우에만 현재 Chart 인스턴스의
+        labels/data를 갱신하여 깜빡임을 없앱니다.
+    */
 
     if (appUsageChartInstance) {
 
-        appUsageChartInstance.destroy();
+        const sameLabels =
+            areChartArraysEqual(
+                appUsageChartInstance
+                    .data
+                    .labels,
+                labels
+            );
+
+
+        const sameValues =
+            areChartArraysEqual(
+                appUsageChartInstance
+                    .data
+                    .datasets[0]
+                    .data,
+                values
+            );
+
+
+        if (
+            sameLabels
+            &&
+            sameValues
+        ) {
+
+            return;
+
+        }
+
+
+        appUsageChartInstance
+            .data
+            .labels =
+            [
+                ...labels
+            ];
+
+
+        appUsageChartInstance
+            .data
+            .datasets[0]
+            .data =
+            [
+                ...values
+            ];
+
+
+        appUsageChartInstance.update(
+            "none"
+        );
+
+        return;
 
     }
 
@@ -616,82 +759,121 @@ function renderActivityBalanceChart(
         );
 
 
+    const balanceValues = [
+
+        balance
+            .productiveMinutes,
+
+        balance
+            .entertainmentMinutes
+
+    ];
+
+
+    /*
+        기존 도넛그래프를 제거하지 않고
+        실제 값이 달라진 경우에만 데이터만 교체합니다.
+    */
+
     if (activityBalanceChartInstance) {
 
-        activityBalanceChartInstance.destroy();
+        const sameValues =
+            areChartArraysEqual(
+                activityBalanceChartInstance
+                    .data
+                    .datasets[0]
+                    .data,
+                balanceValues
+            );
+
+
+        if (
+            !sameValues
+        ) {
+
+            activityBalanceChartInstance
+                .data
+                .datasets[0]
+                .data =
+                [
+                    ...balanceValues
+                ];
+
+
+            activityBalanceChartInstance.update(
+                "none"
+            );
+
+        }
 
     }
 
+    else {
 
-    activityBalanceChartInstance =
-        new Chart(
-            canvas,
-            {
+        activityBalanceChartInstance =
+            new Chart(
+                canvas,
+                {
 
-                type: "doughnut",
-
-
-                data: {
-
-                    labels: [
-
-                        "생산적 활동",
-
-                        "오락 활동"
-
-                    ],
+                    type: "doughnut",
 
 
-                    datasets: [
+                    data: {
 
-                        {
+                        labels: [
 
-                            data: [
+                            "생산적 활동",
 
-                                balance
-                                    .productiveMinutes,
+                            "오락 활동"
 
-                                balance
-                                    .entertainmentMinutes
-
-                            ],
-
-                            borderWidth: 2
-
-                        }
-
-                    ]
-
-                },
+                        ],
 
 
-                options: {
+                        datasets: [
 
-                    responsive: true,
+                            {
 
-                    maintainAspectRatio:
-                        false,
+                                data:
+                                    balanceValues,
+
+                                borderWidth: 2
+
+                            }
+
+                        ]
+
+                    },
 
 
-                    cutout:
-                        "65%",
+                    options: {
+
+                        responsive: true,
+
+                        maintainAspectRatio:
+                            false,
 
 
-                    plugins: {
+                        cutout:
+                            "65%",
 
-                        legend: {
 
-                            position:
-                                "bottom"
+                        plugins: {
+
+                            legend: {
+
+                                position:
+                                    "bottom"
+
+                            }
 
                         }
 
                     }
 
                 }
+            );
 
-            }
-        );
+    }
 
 
     /* 생산적 활동 시간 표시 */
