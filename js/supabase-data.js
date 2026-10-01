@@ -155,6 +155,82 @@ function getCategoryOverrides(
 }
 
 
+/*
+    2차 분류(생산적 활동 / 오락 활동)는
+    1차 카테고리와 별도의 metadata로 저장합니다.
+
+    아직 2차 분류를 저장하지 않은 기존 사용자는
+    기존 getActivityType(category) 자동 분류를 그대로 사용합니다.
+*/
+function getPurposeOverrides(
+    user
+) {
+
+    const value =
+        user?.user_metadata
+            ?.app_purpose_overrides;
+
+
+    if (
+        !value
+        ||
+        typeof value !== "object"
+        ||
+        Array.isArray(value)
+    ) {
+
+        return {};
+
+    }
+
+
+    return value;
+}
+
+
+function resolveUserActivityType(
+    packageName,
+    category,
+    purposeOverrides
+) {
+
+    const key =
+        String(
+            packageName
+            ?? ""
+        ).trim();
+
+
+    const override =
+        key
+            ? String(
+                purposeOverrides?.[key]
+                ?? ""
+            ).trim()
+            : "";
+
+
+    if (
+        override === "productive"
+        ||
+        override === "entertainment"
+    ) {
+
+        return override;
+
+    }
+
+
+    /*
+        미설정 앱은 기존 분류 규칙 유지:
+        1차 카테고리 → productive / entertainment / neutral
+    */
+    return getActivityType(
+        category
+    );
+}
+
+
 function resolveUserCategory(
     packageName,
     originalCategory,
@@ -1954,6 +2030,12 @@ export async function loadEchoPathUsageData() {
         );
 
 
+    const purposeOverrides =
+        getPurposeOverrides(
+            user
+        );
+
+
     const rawAppRows =
         appsResult.data
         ?? [];
@@ -2248,8 +2330,10 @@ export async function loadEchoPathUsageData() {
                         "기타",
 
                     activityType:
-                        getActivityType(
-                            item.category
+                        resolveUserActivityType(
+                            item.package_name,
+                            item.category,
+                            purposeOverrides
                         ),
 
                     usageMinutes:
@@ -2409,6 +2493,8 @@ export async function loadEchoPathUsageData() {
 
 
         categoryOverrides,
+
+        purposeOverrides,
 
 
         /*
