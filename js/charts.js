@@ -16,6 +16,20 @@ let monthlyDdiTrendChartInstance = null;
 
 
 /* =========================================
+   통계 기간 선택 상태
+========================================= */
+
+let selectedStatisticsPeriod =
+    "daily";
+
+let latestStatisticsUsageData =
+    null;
+
+let periodButtonsInitialized =
+    false;
+
+
+/* =========================================
    1. 분 → 시간 형식 변환
 
    예:
@@ -65,8 +79,19 @@ function formatMinutes(minutes) {
 
 function renderPeriodUsageChart(
     usageData,
-    period = "daily"
+    period = selectedStatisticsPeriod
 ) {
+
+    const resolvedPeriod =
+        usageData
+            ?.periodUsage
+            ?.[period]
+            ? period
+            : "daily";
+
+
+    selectedStatisticsPeriod =
+        resolvedPeriod;
 
     const canvas =
         document.querySelector(
@@ -88,7 +113,7 @@ function renderPeriodUsageChart(
     const periodData =
         usageData
             .periodUsage
-            ?.[period];
+            ?.[resolvedPeriod];
 
 
     if (!periodData) {
@@ -276,14 +301,43 @@ function renderPeriodUsageChart(
    3. 일간 / 주간 / 월간 버튼 설정
 ========================================= */
 
-function setupPeriodButtons(
-    usageData
-) {
+function setupPeriodButtons() {
 
     const buttons =
         document.querySelectorAll(
             ".period-button"
         );
+
+
+    /*
+        Realtime 재렌더링 후에도
+        사용자가 선택한 일간 / 주간 / 월간 상태를 유지합니다.
+    */
+    buttons.forEach(
+        (button) => {
+
+            button.classList.toggle(
+                "active",
+                button.dataset.period
+                ===
+                selectedStatisticsPeriod
+            );
+
+        }
+    );
+
+
+    /*
+        Realtime 때 renderStatistics()가 반복 호출되더라도
+        클릭 이벤트는 최초 1회만 연결합니다.
+    */
+    if (
+        periodButtonsInitialized
+    ) {
+
+        return;
+
+    }
 
 
     buttons.forEach(
@@ -293,35 +347,35 @@ function setupPeriodButtons(
                 "click",
                 () => {
 
+                    selectedStatisticsPeriod =
+                        button.dataset.period
+                        || "daily";
 
-                    /* 모든 버튼 선택 해제 */
 
                     buttons.forEach(
                         (item) => {
 
-                            item.classList.remove(
-                                "active"
+                            item.classList.toggle(
+                                "active",
+                                item.dataset.period
+                                ===
+                                selectedStatisticsPeriod
                             );
 
                         }
                     );
 
 
-                    /* 클릭한 버튼 활성화 */
+                    if (
+                        latestStatisticsUsageData
+                    ) {
 
-                    button.classList.add(
-                        "active"
-                    );
+                        renderPeriodUsageChart(
+                            latestStatisticsUsageData,
+                            selectedStatisticsPeriod
+                        );
 
-
-                    const period =
-                        button.dataset.period;
-
-
-                    renderPeriodUsageChart(
-                        usageData,
-                        period
-                    );
+                    }
 
                 }
             );
@@ -329,8 +383,11 @@ function setupPeriodButtons(
         }
     );
 
-}
 
+    periodButtonsInitialized =
+        true;
+
+}
 
 
 /* =========================================
@@ -2023,26 +2080,17 @@ function renderMonthlyDdiTrendChart(
 
                             ticks: {
 
-                                /*
-                                    부동소수점 오차로
-                                    0.9400000000001 같은 값이 표시되지 않도록
-                                    Y축 눈금은 소수점 둘째 자리까지만 표시합니다.
-                                */
-                                precision:
-                                    2,
-
                                 callback:
                                     function(
                                         value
                                     ) {
 
-                                        return (
-                                            `${Number(
-                                                value
-                                            ).toFixed(
-                                                2
-                                            )} km`
-                                        );
+                                        const rounded =
+                                            Math.round(
+                                                Number(value) * 100
+                                            ) / 100;
+
+                                        return `${rounded.toFixed(2)} km`;
 
                                     }
 
@@ -2082,22 +2130,23 @@ export function renderStatistics(
 ) {
 
 
-    /* =====================================
-       카테고리 사용시간
-       기본값 = 일간
-    ===================================== */
+    /*
+        최신 Realtime 데이터는 갱신하되
+        현재 선택 중인 통계 기간은 그대로 유지합니다.
+    */
+    latestStatisticsUsageData =
+        usageData;
+
 
     renderPeriodUsageChart(
         usageData,
-        "daily"
+        selectedStatisticsPeriod
     );
 
 
     /* 기간 선택 버튼 */
 
-    setupPeriodButtons(
-        usageData
-    );
+    setupPeriodButtons();
 
 
     /* 앱별 사용시간 */
