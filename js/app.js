@@ -7396,10 +7396,25 @@ const SETTINGS_CATEGORY_OPTIONS = [
 ];
 
 
+const SETTINGS_PURPOSE_OPTIONS = [
+    {
+        value: "productive",
+        label: "생산적 활동"
+    },
+    {
+        value: "entertainment",
+        label: "오락 활동"
+    }
+];
+
+
 let settingsCategoryApps =
     [];
 
 let settingsCategoryDraft =
+    {};
+
+let settingsPurposeDraft =
     {};
 
 let settingsCategoryUser =
@@ -7462,6 +7477,42 @@ function getSettingsCategoryOverrides(
         user
             ?.user_metadata
             ?.app_category_overrides;
+
+
+    if (
+        !overrides
+        ||
+        typeof overrides !== "object"
+        ||
+        Array.isArray(
+            overrides
+        )
+    ) {
+
+        return {};
+
+    }
+
+
+    return {
+        ...overrides
+    };
+
+}
+
+
+/*
+    2차 분류(생산적 활동 / 오락 활동)는
+    기존 1차 카테고리와 완전히 별도의 metadata로 보관합니다.
+*/
+function getSettingsPurposeOverrides(
+    user
+) {
+
+    const overrides =
+        user
+            ?.user_metadata
+            ?.app_purpose_overrides;
 
 
     if (
@@ -7701,19 +7752,58 @@ function renderSettingsCategoryApps() {
             );
 
 
-            const select =
+            /*
+                1차 분류: 기존 활동 영역 카테고리
+                2차 분류: 생산적 활동 / 오락 활동
+
+                두 값은 서로 독립적으로 저장합니다.
+            */
+
+            const classificationGrid =
+                document.createElement(
+                    "div"
+                );
+
+
+            classificationGrid.className =
+                "category-classification-grid";
+
+
+            /* ---------- 1차 분류 ---------- */
+
+            const categoryField =
+                document.createElement(
+                    "label"
+                );
+
+
+            categoryField.className =
+                "category-classification-field";
+
+
+            const categoryLabel =
+                document.createElement(
+                    "span"
+                );
+
+
+            categoryLabel.textContent =
+                "1차 분류";
+
+
+            const categorySelect =
                 document.createElement(
                     "select"
                 );
 
 
-            select.className =
+            categorySelect.className =
                 "category-select";
 
 
-            select.setAttribute(
+            categorySelect.setAttribute(
                 "aria-label",
-                `${nameElement.textContent} 카테고리`
+                `${nameElement.textContent} 1차 분류`
             );
 
 
@@ -7773,7 +7863,7 @@ function renderSettingsCategoryApps() {
                             selectedCategory;
 
 
-                        select.appendChild(
+                        categorySelect.appendChild(
                             option
                         );
 
@@ -7781,13 +7871,13 @@ function renderSettingsCategoryApps() {
                 );
 
 
-            select.addEventListener(
+            categorySelect.addEventListener(
                 "change",
                 () => {
 
                     const nextCategory =
                         String(
-                            select.value
+                            categorySelect.value
                             ?? ""
                         )
                             .trim();
@@ -7801,12 +7891,6 @@ function renderSettingsCategoryApps() {
 
                     }
 
-
-                    /*
-                        현재 선택한 카테고리를 명시적으로 저장합니다.
-                        이렇게 하면 기존 사용자 분류가 있는 앱도
-                        다른 카테고리로 안정적으로 변경할 수 있습니다.
-                    */
 
                     settingsCategoryDraft[
                         app.packageName
@@ -7822,9 +7906,201 @@ function renderSettingsCategoryApps() {
             );
 
 
+            categoryField.append(
+                categoryLabel,
+                categorySelect
+            );
+
+
+            /* ---------- 2차 분류 ---------- */
+
+            const purposeField =
+                document.createElement(
+                    "label"
+                );
+
+
+            purposeField.className =
+                "category-classification-field";
+
+
+            const purposeLabel =
+                document.createElement(
+                    "span"
+                );
+
+
+            purposeLabel.textContent =
+                "2차 분류";
+
+
+            const purposeSelect =
+                document.createElement(
+                    "select"
+                );
+
+
+            purposeSelect.className =
+                "category-select purpose-select";
+
+
+            purposeSelect.setAttribute(
+                "aria-label",
+                `${nameElement.textContent} 2차 분류`
+            );
+
+
+            const savedPurpose =
+                String(
+                    settingsPurposeDraft[
+                        app.packageName
+                    ]
+                    ?? ""
+                )
+                    .trim();
+
+
+            /*
+                기존 사용자의 동작을 깨지 않기 위해,
+                2차 분류를 아직 저장하지 않은 앱은
+                현재 자동 분류(activityType)를 화면 기본값으로 보여 줍니다.
+
+                기타 등 자동 분류가 neutral인 앱은
+                사용자가 직접 2차 분류를 선택할 수 있게 안내합니다.
+            */
+            const fallbackPurpose =
+                (
+                    app.activityType === "productive"
+                    ||
+                    app.activityType === "entertainment"
+                )
+                    ? app.activityType
+                    : "";
+
+
+            const selectedPurpose =
+                savedPurpose
+                ||
+                fallbackPurpose;
+
+
+            if (
+                !selectedPurpose
+            ) {
+
+                const placeholderOption =
+                    document.createElement(
+                        "option"
+                    );
+
+
+                placeholderOption.value =
+                    "";
+
+
+                placeholderOption.textContent =
+                    "2차 분류 선택";
+
+
+                placeholderOption.disabled =
+                    true;
+
+
+                placeholderOption.selected =
+                    true;
+
+
+                purposeSelect.appendChild(
+                    placeholderOption
+                );
+
+            }
+
+
+            SETTINGS_PURPOSE_OPTIONS
+                .forEach(
+                    (purpose) => {
+
+                        const option =
+                            document.createElement(
+                                "option"
+                            );
+
+
+                        option.value =
+                            purpose.value;
+
+
+                        option.textContent =
+                            purpose.label;
+
+
+                        option.selected =
+                            purpose.value
+                            ===
+                            selectedPurpose;
+
+
+                        purposeSelect.appendChild(
+                            option
+                        );
+
+                    }
+                );
+
+
+            purposeSelect.addEventListener(
+                "change",
+                () => {
+
+                    const nextPurpose =
+                        String(
+                            purposeSelect.value
+                            ?? ""
+                        )
+                            .trim();
+
+
+                    if (
+                        nextPurpose !== "productive"
+                        &&
+                        nextPurpose !== "entertainment"
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    settingsPurposeDraft[
+                        app.packageName
+                    ] =
+                        nextPurpose;
+
+
+                    setCategorySettingsStatus(
+                        "변경사항이 있습니다. 저장 버튼을 눌러 주세요."
+                    );
+
+                }
+            );
+
+
+            purposeField.append(
+                purposeLabel,
+                purposeSelect
+            );
+
+
+            classificationGrid.append(
+                categoryField,
+                purposeField
+            );
+
+
             item.append(
                 copy,
-                select
+                classificationGrid
             );
 
 
@@ -7916,6 +8192,14 @@ async function loadSettingsCategoryApps() {
                                 "기타"
                             ),
 
+                        activityType:
+                            String(
+                                app
+                                    ?.activityType
+                                ??
+                                "neutral"
+                            ),
+
                         usageMinutes:
                             Number(
                                 app
@@ -7973,6 +8257,51 @@ async function loadSettingsCategoryApps() {
             getSettingsCategoryOverrides(
                 settingsCategoryUser
             );
+
+
+        settingsPurposeDraft =
+            getSettingsPurposeOverrides(
+                settingsCategoryUser
+            );
+
+
+        /*
+            기존 사용자는 2차 분류 metadata가 아직 없을 수 있습니다.
+            현재 자동 분류가 productive / entertainment로 명확한 앱은
+            화면에 보이는 값과 저장 값이 일치하도록 draft에만 기본값을 채웁니다.
+
+            이렇게 하면 이후 1차 분류를 바꾸더라도,
+            저장된 2차 분류는 독립적으로 유지됩니다.
+        */
+        settingsCategoryApps.forEach(
+            (app) => {
+
+                if (
+                    settingsPurposeDraft[
+                        app.packageName
+                    ]
+                ) {
+
+                    return;
+
+                }
+
+
+                if (
+                    app.activityType === "productive"
+                    ||
+                    app.activityType === "entertainment"
+                ) {
+
+                    settingsPurposeDraft[
+                        app.packageName
+                    ] =
+                        app.activityType;
+
+                }
+
+            }
+        );
 
 
         renderSettingsCategoryApps();
@@ -8096,6 +8425,10 @@ async function saveSettingsCategories() {
 
                         app_category_overrides: {
                             ...settingsCategoryDraft
+                        },
+
+                        app_purpose_overrides: {
+                            ...settingsPurposeDraft
                         }
                     }
                 });
@@ -8117,7 +8450,7 @@ async function saveSettingsCategories() {
 
 
         setCategorySettingsStatus(
-            "저장되었습니다. 변경한 카테고리를 전체 화면에 반영합니다.",
+            "저장되었습니다. 변경한 1차·2차 분류를 전체 화면에 반영합니다.",
             "success"
         );
 
@@ -8182,7 +8515,7 @@ async function resetSettingsCategories() {
 
     const confirmed =
         window.confirm(
-            "직접 설정한 앱 카테고리를 모두 초기화할까요?\n\n원본 사용 데이터와 T·N·C·R·DDI 값은 삭제되지 않습니다."
+            "직접 설정한 앱의 1차·2차 분류를 모두 초기화할까요?\n\n원본 사용 데이터와 T·N·C·R·DDI 값은 삭제되지 않습니다."
         );
 
 
@@ -8263,6 +8596,9 @@ async function resetSettingsCategories() {
                         ),
 
                         app_category_overrides:
+                            {},
+
+                        app_purpose_overrides:
                             {}
                     }
                 });
@@ -8284,6 +8620,10 @@ async function resetSettingsCategories() {
 
 
         settingsCategoryDraft =
+            {};
+
+
+        settingsPurposeDraft =
             {};
 
 
