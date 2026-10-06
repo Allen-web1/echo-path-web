@@ -7417,6 +7417,9 @@ let settingsCategoryDraft =
 let settingsPurposeDraft =
     {};
 
+let settingsAppRegistry =
+    {};
+
 let settingsCategoryUser =
     null;
 
@@ -7534,6 +7537,270 @@ function getSettingsPurposeOverrides(
         ...overrides
     };
 
+}
+
+
+
+/*
+    설정 화면에서 과거에 한 번이라도 확인된 앱을
+    날짜가 바뀌어도 계속 유지하기 위한 앱 목록입니다.
+
+    분류값 자체는 기존 metadata를 그대로 사용합니다.
+    - app_category_overrides: 1차 분류
+    - app_purpose_overrides: 2차 분류
+
+    app_settings_registry에는 앱 식별용 정보(패키지명/앱 이름)만 보관합니다.
+*/
+function getSettingsAppRegistry(
+    user
+) {
+
+    const registry =
+        user
+            ?.user_metadata
+            ?.app_settings_registry;
+
+
+    if (
+        !registry
+        ||
+        typeof registry !== "object"
+        ||
+        Array.isArray(
+            registry
+        )
+    ) {
+
+        return {};
+
+    }
+
+
+    const normalized = {};
+
+
+    Object.entries(
+        registry
+    ).forEach(
+        (
+            [
+                packageName,
+                value
+            ]
+        ) => {
+
+            const key =
+                String(
+                    packageName
+                    ?? ""
+                )
+                    .trim();
+
+
+            if (
+                !key
+            ) {
+
+                return;
+
+            }
+
+
+            const entry =
+                (
+                    value
+                    &&
+                    typeof value === "object"
+                    &&
+                    !Array.isArray(
+                        value
+                    )
+                )
+                    ? value
+                    : {};
+
+
+            normalized[
+                key
+            ] = {
+
+                name:
+                    String(
+                        entry.name
+                        ??
+                        key
+                    )
+
+            };
+
+        }
+    );
+
+
+    return normalized;
+}
+
+
+function buildSettingsRegistryEntry(
+    app,
+    previousEntry = null
+) {
+
+    const packageName =
+        String(
+            app
+                ?.packageName
+            ?? ""
+        )
+            .trim();
+
+
+    const previous =
+        (
+            previousEntry
+            &&
+            typeof previousEntry === "object"
+            &&
+            !Array.isArray(
+                previousEntry
+            )
+        )
+            ? previousEntry
+            : {};
+
+
+    const currentName =
+        String(
+            app
+                ?.name
+            ?? ""
+        )
+            .trim();
+
+
+    const previousName =
+        String(
+            previous
+                ?.name
+            ?? ""
+        )
+            .trim();
+
+
+    const safeName =
+        (
+            currentName
+            &&
+            currentName !== packageName
+            &&
+            currentName !== "알 수 없는 앱"
+        )
+            ? currentName
+            : (
+                previousName
+                ||
+                packageName
+                ||
+                "알 수 없는 앱"
+            );
+
+
+    return {
+
+        name:
+            safeName
+
+    };
+}
+
+
+function areSettingsRegistriesEqual(
+    first,
+    second
+) {
+
+    return (
+        JSON.stringify(
+            first
+            ?? {}
+        )
+        ===
+        JSON.stringify(
+            second
+            ?? {}
+        )
+    );
+}
+
+
+async function persistSettingsAppRegistryIfNeeded(
+    user,
+    nextRegistry
+) {
+
+    if (
+        !user
+    ) {
+
+        return user;
+
+    }
+
+
+    const currentRegistry =
+        getSettingsAppRegistry(
+            user
+        );
+
+
+    if (
+        areSettingsRegistriesEqual(
+            currentRegistry,
+            nextRegistry
+        )
+    ) {
+
+        return user;
+
+    }
+
+
+    const {
+        data,
+        error
+    } =
+        await supabase
+            .auth
+            .updateUser({
+                data: {
+                    ...(
+                        user
+                            .user_metadata
+                        ?? {}
+                    ),
+
+                    app_settings_registry: {
+                        ...nextRegistry
+                    }
+                }
+            });
+
+
+    if (
+        error
+    ) {
+
+        throw error;
+
+    }
+
+
+    return (
+        data
+            ?.user
+        ??
+        user
+    );
 }
 
 
@@ -7671,7 +7938,7 @@ function renderSettingsCategoryApps() {
 
         emptyElement.textContent =
             settingsCategoryApps.length === 0
-                ? "오늘 수집된 앱 사용 데이터가 없습니다."
+                ? "확인된 앱이 아직 없습니다."
                 : "검색 결과가 없습니다.";
 
 
@@ -8140,15 +8407,16 @@ async function loadSettingsCategoryApps() {
 
 
     setCategorySettingsStatus(
-        "오늘 수집된 앱 데이터를 확인하는 중입니다."
+        "저장된 앱 분류와 현재 사용 앱을 확인하는 중입니다."
     );
 
 
     try {
 
         /*
-            홈 / 통계 / DDI에서 이미 사용 중인
-            최신 usageData.apps를 그대로 사용합니다.
+            현재 실제 사용 앱은 usageData.apps에서 가져옵니다.
+            이 값은 오늘 데이터이므로, 설정 화면 목록 자체는
+            아래 app_settings_registry와 합쳐서 누적 유지합니다.
         */
 
         const sourceApps =
@@ -8160,7 +8428,7 @@ async function loadSettingsCategoryApps() {
                 : [];
 
 
-        settingsCategoryApps =
+        const currentApps =
             sourceApps
                 .map(
                     (app) => ({
@@ -8216,15 +8484,6 @@ async function loadSettingsCategoryApps() {
                         Boolean(
                             app.packageName
                         )
-                )
-                .sort(
-                    (
-                        a,
-                        b
-                    ) =>
-                        b.usageMinutes
-                        -
-                        a.usageMinutes
                 );
 
 
@@ -8265,6 +8524,250 @@ async function loadSettingsCategoryApps() {
             );
 
 
+        const storedRegistry =
+            getSettingsAppRegistry(
+                settingsCategoryUser
+            );
+
+
+        const nextRegistry = {
+            ...storedRegistry
+        };
+
+
+        /*
+            기존 버전에서 이미 1차/2차 분류를 저장한 앱도
+            registry 도입 첫날부터 설정 목록에서 빠지지 않게 복원합니다.
+
+            과거 앱의 실제 이름을 알 수 없는 경우에는
+            packageName을 임시 표시명으로 사용하고,
+            해당 앱을 다시 사용하면 실제 앱 이름으로 자동 보정됩니다.
+        */
+
+        const knownPackageNames =
+            new Set([
+                ...Object.keys(
+                    nextRegistry
+                ),
+                ...Object.keys(
+                    settingsCategoryDraft
+                ),
+                ...Object.keys(
+                    settingsPurposeDraft
+                )
+            ]);
+
+
+        knownPackageNames.forEach(
+            (packageName) => {
+
+                const key =
+                    String(
+                        packageName
+                        ?? ""
+                    )
+                        .trim();
+
+
+                if (
+                    !key
+                ) {
+
+                    return;
+
+                }
+
+
+                if (
+                    !nextRegistry[
+                        key
+                    ]
+                ) {
+
+                    nextRegistry[
+                        key
+                    ] = {
+
+                        name:
+                            key
+
+                    };
+
+                }
+
+            }
+        );
+
+
+        /*
+            오늘 새로 확인된 앱은 registry에 추가하고,
+            과거에 있던 앱을 다시 사용한 경우에는 앱 이름 등의
+            표시 정보를 최신 실제 값으로 보정합니다.
+        */
+
+        currentApps.forEach(
+            (app) => {
+
+                nextRegistry[
+                    app.packageName
+                ] =
+                    buildSettingsRegistryEntry(
+                        app,
+                        nextRegistry[
+                            app.packageName
+                        ]
+                    );
+
+            }
+        );
+
+
+        settingsAppRegistry =
+            nextRegistry;
+
+
+        /*
+            사용자가 별도로 저장 버튼을 누르지 않아도
+            한 번 확인된 앱 자체는 즉시 계정 metadata에 보존합니다.
+            분류 설정값은 기존 저장 버튼 동작을 그대로 유지합니다.
+        */
+
+        settingsCategoryUser =
+            await persistSettingsAppRegistryIfNeeded(
+                settingsCategoryUser,
+                settingsAppRegistry
+            );
+
+
+        const currentAppMap =
+            new Map(
+                currentApps.map(
+                    (app) => [
+                        app.packageName,
+                        app
+                    ]
+                )
+            );
+
+
+        settingsCategoryApps =
+            Object.entries(
+                settingsAppRegistry
+            )
+                .map(
+                    (
+                        [
+                            packageName,
+                            registryEntry
+                        ]
+                    ) => {
+
+                        const currentApp =
+                            currentAppMap.get(
+                                packageName
+                            );
+
+
+                        const savedCategory =
+                            settingsCategoryDraft[
+                                packageName
+                            ];
+
+
+                        const savedPurpose =
+                            settingsPurposeDraft[
+                                packageName
+                            ];
+
+
+                        return {
+
+                            packageName,
+
+                            name:
+                                String(
+                                    currentApp
+                                        ?.name
+                                    ??
+                                    registryEntry
+                                        ?.name
+                                    ??
+                                    packageName
+                                ),
+
+                            category:
+                                String(
+                                    savedCategory
+                                    ??
+                                    currentApp
+                                        ?.category
+                                    ??
+                                    "기타"
+                                ),
+
+                            activityType:
+                                String(
+                                    savedPurpose
+                                    ??
+                                    currentApp
+                                        ?.activityType
+                                    ??
+                                    "neutral"
+                                ),
+
+                            usageMinutes:
+                                Number(
+                                    currentApp
+                                        ?.usageMinutes
+                                    ??
+                                    0
+                                )
+                                || 0
+
+                        };
+
+                    }
+                )
+                .filter(
+                    (app) =>
+                        Boolean(
+                            app.packageName
+                        )
+                )
+                .sort(
+                    (
+                        a,
+                        b
+                    ) => {
+
+                        const usageDifference =
+                            b.usageMinutes
+                            -
+                            a.usageMinutes;
+
+
+                        if (
+                            usageDifference !== 0
+                        ) {
+
+                            return usageDifference;
+
+                        }
+
+
+                        return String(
+                            a.name
+                        ).localeCompare(
+                            String(
+                                b.name
+                            ),
+                            "ko"
+                        );
+
+                    }
+                );
+
+
         /*
             기존 사용자는 2차 분류 metadata가 아직 없을 수 있습니다.
             현재 자동 분류가 productive / entertainment로 명확한 앱은
@@ -8273,6 +8776,7 @@ async function loadSettingsCategoryApps() {
             이렇게 하면 이후 1차 분류를 바꾸더라도,
             저장된 2차 분류는 독립적으로 유지됩니다.
         */
+
         settingsCategoryApps.forEach(
             (app) => {
 
@@ -8309,8 +8813,8 @@ async function loadSettingsCategoryApps() {
 
         setCategorySettingsStatus(
             settingsCategoryApps.length > 0
-                ? `${settingsCategoryApps.length}개 앱을 불러왔습니다.`
-                : "오늘 수집된 앱 사용 데이터가 없습니다.",
+                ? `${settingsCategoryApps.length}개 앱을 불러왔습니다. 과거에 확인된 앱도 계속 유지됩니다.`
+                : "확인된 앱이 아직 없습니다.",
             settingsCategoryApps.length > 0
                 ? "success"
                 : ""
@@ -8429,6 +8933,10 @@ async function saveSettingsCategories() {
 
                         app_purpose_overrides: {
                             ...settingsPurposeDraft
+                        },
+
+                        app_settings_registry: {
+                            ...settingsAppRegistry
                         }
                     }
                 });
@@ -8600,6 +9108,12 @@ async function resetSettingsCategories() {
 
                         app_purpose_overrides:
                             {}
+
+                        /*
+                            app_settings_registry는 지우지 않습니다.
+                            분류를 초기화해도 과거에 한 번 확인된 앱 목록은
+                            설정 화면에 계속 남아 있어야 합니다.
+                        */
                     }
                 });
 
