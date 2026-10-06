@@ -7804,6 +7804,229 @@ async function persistSettingsAppRegistryIfNeeded(
 }
 
 
+
+/*
+    과거 앱이 registry에 패키지명만 남아 있는 경우,
+    daily_app_usage에 저장된 실제 app_name을 찾아
+    설정 화면의 표시명을 복구합니다.
+
+    이 조회는 이름이 없는 앱에 대해서만 실행되고,
+    복구된 이름은 app_settings_registry에 다시 저장되므로
+    이후에는 같은 앱 이름을 반복 조회하지 않습니다.
+*/
+async function loadSettingsHistoricalAppNames(
+    userId,
+    packageNames
+) {
+
+    const targets =
+        Array.from(
+            new Set(
+                (
+                    Array.isArray(
+                        packageNames
+                    )
+                        ? packageNames
+                        : []
+                )
+                    .map(
+                        (value) =>
+                            String(
+                                value
+                                ?? ""
+                            )
+                                .trim()
+                    )
+                    .filter(
+                        Boolean
+                    )
+            )
+        );
+
+
+    const resolvedNames = {};
+
+
+    if (
+        !userId
+        ||
+        targets.length === 0
+    ) {
+
+        return resolvedNames;
+
+    }
+
+
+    /*
+        한 앱의 최근 기록 몇 개만 확인하면 충분합니다.
+        너무 많은 요청을 동시에 보내지 않도록 작은 묶음으로 조회합니다.
+    */
+    const BATCH_SIZE =
+        10;
+
+
+    for (
+        let start = 0;
+        start < targets.length;
+        start += BATCH_SIZE
+    ) {
+
+        const batch =
+            targets.slice(
+                start,
+                start
+                +
+                BATCH_SIZE
+            );
+
+
+        const results =
+            await Promise.all(
+                batch.map(
+                    async (
+                        packageName
+                    ) => {
+
+                        try {
+
+                            const {
+                                data,
+                                error
+                            } =
+                                await supabase
+                                    .from(
+                                        "daily_app_usage"
+                                    )
+                                    .select(
+                                        "package_name, app_name, record_date"
+                                    )
+                                    .eq(
+                                        "user_id",
+                                        userId
+                                    )
+                                    .eq(
+                                        "package_name",
+                                        packageName
+                                    )
+                                    .order(
+                                        "record_date",
+                                        {
+                                            ascending:
+                                                false
+                                        }
+                                    )
+                                    .limit(
+                                        20
+                                    );
+
+
+                            if (
+                                error
+                            ) {
+
+                                console.warn(
+                                    "과거 앱 이름 조회 대기:",
+                                    packageName,
+                                    error.message
+                                    ?? error
+                                );
+
+
+                                return null;
+
+                            }
+
+
+                            const matched =
+                                (
+                                    data
+                                    ?? []
+                                )
+                                    .map(
+                                        (row) => ({
+                                            packageName:
+                                                String(
+                                                    row
+                                                        ?.package_name
+                                                    ??
+                                                    packageName
+                                                )
+                                                    .trim(),
+
+                                            name:
+                                                String(
+                                                    row
+                                                        ?.app_name
+                                                    ??
+                                                    ""
+                                                )
+                                                    .trim()
+                                        })
+                                    )
+                                    .find(
+                                        (item) =>
+                                            Boolean(
+                                                item.name
+                                            )
+                                            &&
+                                            item.name
+                                            !==
+                                            item.packageName
+                                            &&
+                                            item.name
+                                            !==
+                                            "알 수 없는 앱"
+                                    );
+
+
+                            return matched
+                                ?? null;
+
+                        }
+
+                        catch (
+                            error
+                        ) {
+
+                            console.warn(
+                                "과거 앱 이름 조회 실패:",
+                                packageName,
+                                error
+                            );
+
+
+                            return null;
+
+                        }
+
+                    }
+                )
+            );
+
+
+        results
+            .filter(
+                Boolean
+            )
+            .forEach(
+                (item) => {
+
+                    resolvedNames[
+                        item.packageName
+                    ] =
+                        item.name;
+
+                }
+            );
+
+    }
+
+
+    return resolvedNames;
+}
+
+
 /* =========================================
    사용시간 표시
 ========================================= */
@@ -8615,6 +8838,99 @@ async function loadSettingsCategoryApps() {
                         app,
                         nextRegistry[
                             app.packageName
+                        ]
+                    );
+
+            }
+        );
+
+
+        /*
+            오늘 사용하지 않은 과거 앱은 currentApps에서 이름을 얻을 수 없습니다.
+            registry에 패키지명만 남아 있는 앱만 골라
+            daily_app_usage의 과거 기록에서 실제 앱 이름을 복구합니다.
+
+            예:
+            com.nhn.android.search → NAVER
+            us.zoom.videomeetings → Zoom Workplace
+
+            날짜 정보는 registry에 저장하지 않습니다.
+        */
+
+        const unresolvedPackageNames =
+            Object.entries(
+                nextRegistry
+            )
+                .filter(
+                    (
+                        [
+                            packageName,
+                            registryEntry
+                        ]
+                    ) => {
+
+                        const savedName =
+                            String(
+                                registryEntry
+                                    ?.name
+                                ?? ""
+                            )
+                                .trim();
+
+
+                        return (
+                            !savedName
+                            ||
+                            savedName
+                            ===
+                            packageName
+                            ||
+                            savedName
+                            ===
+                            "알 수 없는 앱"
+                        );
+
+                    }
+                )
+                .map(
+                    (
+                        [
+                            packageName
+                        ]
+                    ) =>
+                        packageName
+                );
+
+
+        const historicalAppNames =
+            await loadSettingsHistoricalAppNames(
+                settingsCategoryUser
+                    ?.id,
+                unresolvedPackageNames
+            );
+
+
+        Object.entries(
+            historicalAppNames
+        ).forEach(
+            (
+                [
+                    packageName,
+                    appName
+                ]
+            ) => {
+
+                nextRegistry[
+                    packageName
+                ] =
+                    buildSettingsRegistryEntry(
+                        {
+                            packageName,
+                            name:
+                                appName
+                        },
+                        nextRegistry[
+                            packageName
                         ]
                     );
 
