@@ -1,28 +1,22 @@
 /* =========================================================
-   Echo Path Learning Chatbot - Conversation History Edition
-   - 기존 app.js와 독립 동작
-   - Supabase Edge Function: learning-chat
-   - 계정별 다중 대화 기록(localStorage)
-   - 대화목록 / 새 대화 / 이어하기 / 개별 삭제
-   - 기존 단일 대화 저장값 자동 마이그레이션
+   Echo Path Learning Chatbot - Supabase Conversation History
+   기존 Echo Path 기능과 독립 동작
+   - 대화목록/메시지: Supabase 계정별 저장
+   - learning-chat Edge Function: 기존 그대로 사용
+   - 플로팅 아이콘 위치만 localStorage 사용
 ========================================================= */
 
 import { supabase } from "./supabase.js";
 
 const FUNCTION_NAME = "learning-chat";
-
-const LEGACY_STORE_PREFIX = "echoPathLearningChat";
-const HISTORY_STORE_PREFIX = "echoPathLearningChatHistory";
-const ACTIVE_STORE_PREFIX = "echoPathLearningChatActive";
 const POSITION_STORAGE_KEY = "echoPathLearningChatPosition";
 
-const MAX_CONVERSATIONS = 50;
-const MAX_MESSAGES_PER_CONVERSATION = 160;
-
-let currentUserId = "guest";
+let currentUser = null;
 let conversations = [];
 let activeConversationId = null;
+let activeMessages = [];
 let isSending = false;
+let isLoadingConversation = false;
 
 let launcherDragging = false;
 let launcherMoved = false;
@@ -33,324 +27,16 @@ let launcherStartTop = 0;
 
 
 /* =========================================================
-   Storage helpers
-========================================================= */
-
-function historyStorageKey() {
-    return `${HISTORY_STORE_PREFIX}_${currentUserId}`;
-}
-
-function activeStorageKey() {
-    return `${ACTIVE_STORE_PREFIX}_${currentUserId}`;
-}
-
-function legacyStorageKey() {
-    return `${LEGACY_STORE_PREFIX}_${currentUserId}`;
-}
-
-function createConversation() {
-    const now = new Date().toISOString();
-
-    return {
-        id:
-            globalThis.crypto?.randomUUID?.()
-            ?? `chat_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
-        title: "새 대화",
-        createdAt: now,
-        updatedAt: now,
-        messages: []
-    };
-}
-
-function normalizeConversation(item) {
-    if (!item || typeof item !== "object") return null;
-
-    const messages =
-        Array.isArray(item.messages)
-            ? item.messages
-                .filter(
-                    (message) =>
-                        message
-                        &&
-                        (
-                            message.role === "user"
-                            ||
-                            message.role === "assistant"
-                        )
-                        &&
-                        typeof message.content === "string"
-                )
-                .slice(-MAX_MESSAGES_PER_CONVERSATION)
-            : [];
-
-    return {
-        id:
-            String(
-                item.id
-                || `chat_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
-            ),
-        title:
-            String(item.title || "새 대화"),
-        createdAt:
-            String(item.createdAt || new Date().toISOString()),
-        updatedAt:
-            String(item.updatedAt || item.createdAt || new Date().toISOString()),
-        messages
-    };
-}
-
-function loadHistory() {
-    try {
-        const raw =
-            localStorage.getItem(
-                historyStorageKey()
-            );
-
-        const parsed =
-            raw
-                ? JSON.parse(raw)
-                : [];
-
-        conversations =
-            Array.isArray(parsed)
-                ? parsed
-                    .map(normalizeConversation)
-                    .filter(Boolean)
-                    .sort(
-                        (a, b) =>
-                            new Date(b.updatedAt).getTime()
-                            -
-                            new Date(a.updatedAt).getTime()
-                    )
-                    .slice(0, MAX_CONVERSATIONS)
-                : [];
-    }
-    catch (error) {
-        console.warn("AI 학습 도우미 대화목록 불러오기 실패:", error);
-        conversations = [];
-    }
-}
-
-function migrateLegacyConversationIfNeeded() {
-    if (conversations.length > 0) return;
-
-    try {
-        const raw =
-            localStorage.getItem(
-                legacyStorageKey()
-            );
-
-        if (!raw) return;
-
-        const parsed =
-            JSON.parse(raw);
-
-        if (!Array.isArray(parsed) || parsed.length === 0) return;
-
-        const messages =
-            parsed
-                .filter(
-                    (item) =>
-                        item
-                        &&
-                        (
-                            item.role === "user"
-                            ||
-                            item.role === "assistant"
-                        )
-                        &&
-                        typeof item.content === "string"
-                )
-                .slice(-MAX_MESSAGES_PER_CONVERSATION);
-
-        if (messages.length === 0) return;
-
-        const conversation =
-            createConversation();
-
-        conversation.messages =
-            messages;
-
-        conversation.title =
-            createTitleFromMessages(
-                messages
-            );
-
-        conversations =
-            [conversation];
-
-        activeConversationId =
-            conversation.id;
-
-        saveHistory();
-        saveActiveConversationId();
-
-        console.log("기존 AI 학습 도우미 대화를 새 대화목록으로 이전했습니다.");
-    }
-    catch (error) {
-        console.warn("기존 챗봇 대화 마이그레이션 실패:", error);
-    }
-}
-
-function saveHistory() {
-    try {
-        conversations =
-            [...conversations]
-                .sort(
-                    (a, b) =>
-                        new Date(b.updatedAt).getTime()
-                        -
-                        new Date(a.updatedAt).getTime()
-                )
-                .slice(0, MAX_CONVERSATIONS);
-
-        localStorage.setItem(
-            historyStorageKey(),
-            JSON.stringify(
-                conversations
-            )
-        );
-    }
-    catch (error) {
-        console.warn("AI 학습 도우미 대화목록 저장 실패:", error);
-    }
-}
-
-function loadActiveConversationId() {
-    try {
-        activeConversationId =
-            localStorage.getItem(
-                activeStorageKey()
-            );
-    }
-    catch {
-        activeConversationId =
-            null;
-    }
-}
-
-function saveActiveConversationId() {
-    try {
-        if (activeConversationId) {
-            localStorage.setItem(
-                activeStorageKey(),
-                activeConversationId
-            );
-        }
-        else {
-            localStorage.removeItem(
-                activeStorageKey()
-            );
-        }
-    }
-    catch {}
-}
-
-function ensureActiveConversation() {
-    let conversation =
-        conversations.find(
-            (item) =>
-                item.id === activeConversationId
-        );
-
-    if (conversation) {
-        return conversation;
-    }
-
-    if (conversations.length > 0) {
-        activeConversationId =
-            conversations[0].id;
-
-        saveActiveConversationId();
-
-        return conversations[0];
-    }
-
-    conversation =
-        createConversation();
-
-    conversations.unshift(
-        conversation
-    );
-
-    activeConversationId =
-        conversation.id;
-
-    saveHistory();
-    saveActiveConversationId();
-
-    return conversation;
-}
-
-function getActiveConversation() {
-    return ensureActiveConversation();
-}
-
-function createTitleFromMessages(messages) {
-    const firstUserMessage =
-        messages.find(
-            (item) =>
-                item.role === "user"
-                &&
-                String(item.content || "").trim()
-        );
-
-    if (!firstUserMessage) {
-        return "새 대화";
-    }
-
-    const cleaned =
-        String(firstUserMessage.content)
-            .replace(/\s+/g, " ")
-            .trim();
-
-    if (!cleaned) {
-        return "새 대화";
-    }
-
-    const maxLength =
-        28;
-
-    return cleaned.length > maxLength
-        ? `${cleaned.slice(0, maxLength).trim()}…`
-        : cleaned;
-}
-
-function updateConversationMetadata(conversation) {
-    conversation.updatedAt =
-        new Date().toISOString();
-
-    if (
-        !conversation.title
-        ||
-        conversation.title === "새 대화"
-    ) {
-        conversation.title =
-            createTitleFromMessages(
-                conversation.messages
-            );
-    }
-}
-
-
-/* =========================================================
-   UI
+   UI 생성
 ========================================================= */
 
 function createChatbotUi() {
-    const root =
-        document.createElement(
-            "div"
-        );
+    const root = document.createElement("div");
 
-    root.className =
-        "echo-chat-root";
+    root.className = "echo-chat-root";
+    root.id = "echoLearningChatbotRoot";
 
-    root.id =
-        "echoLearningChatbotRoot";
-
-    root.innerHTML =
-        `
+    root.innerHTML = `
         <button
             class="echo-chat-launcher"
             id="echoChatLauncher"
@@ -386,26 +72,9 @@ function createChatbotUi() {
                 </div>
 
                 <div class="echo-chat-actions">
-                    <button
-                        id="echoChatHistory"
-                        type="button"
-                    >
-                        대화목록
-                    </button>
-
-                    <button
-                        id="echoChatNew"
-                        type="button"
-                    >
-                        새 대화
-                    </button>
-
-                    <button
-                        id="echoChatHide"
-                        type="button"
-                    >
-                        숨김
-                    </button>
+                    <button id="echoChatHistory" type="button">대화목록</button>
+                    <button id="echoChatNew" type="button">새 대화</button>
+                    <button id="echoChatHide" type="button">숨김</button>
                 </div>
             </header>
 
@@ -473,69 +142,40 @@ function createChatbotUi() {
                 </form>
             </div>
         </section>
-        `;
+    `;
 
-    const app =
-        document.querySelector(
-            "#app"
-        );
+    const app = document.querySelector("#app");
 
     if (!app) {
-        throw new Error(
-            "Echo Path #app을 찾을 수 없습니다."
-        );
+        throw new Error("Echo Path #app을 찾을 수 없습니다.");
     }
 
-    app.appendChild(
-        root
-    );
+    app.appendChild(root);
 
     return root;
 }
 
 
-const root =
-    createChatbotUi();
+const root = createChatbotUi();
 
-const launcher =
-    root.querySelector("#echoChatLauncher");
+const launcher = root.querySelector("#echoChatLauncher");
+const panel = root.querySelector("#echoChatPanel");
+const mainView = root.querySelector("#echoChatMainView");
+const historyView = root.querySelector("#echoChatHistoryView");
+const historyList = root.querySelector("#echoChatHistoryList");
+const historyButton = root.querySelector("#echoChatHistory");
+const historyCloseButton = root.querySelector("#echoChatHistoryClose");
+const messagesElement = root.querySelector("#echoChatMessages");
+const form = root.querySelector("#echoChatForm");
+const input = root.querySelector("#echoChatInput");
+const sendButton = root.querySelector("#echoChatSend");
+const hideButton = root.querySelector("#echoChatHide");
+const newButton = root.querySelector("#echoChatNew");
 
-const panel =
-    root.querySelector("#echoChatPanel");
 
-const mainView =
-    root.querySelector("#echoChatMainView");
-
-const historyView =
-    root.querySelector("#echoChatHistoryView");
-
-const historyList =
-    root.querySelector("#echoChatHistoryList");
-
-const historyButton =
-    root.querySelector("#echoChatHistory");
-
-const historyCloseButton =
-    root.querySelector("#echoChatHistoryClose");
-
-const messagesElement =
-    root.querySelector("#echoChatMessages");
-
-const form =
-    root.querySelector("#echoChatForm");
-
-const input =
-    root.querySelector("#echoChatInput");
-
-const sendButton =
-    root.querySelector("#echoChatSend");
-
-const hideButton =
-    root.querySelector("#echoChatHide");
-
-const newButton =
-    root.querySelector("#echoChatNew");
-
+/* =========================================================
+   공통 표시 함수
+========================================================= */
 
 function escapeHtml(value) {
     return String(value ?? "")
@@ -546,47 +186,43 @@ function escapeHtml(value) {
         .replaceAll("'", "&#039;");
 }
 
-function formatConversationDate(isoString) {
-    const date =
-        new Date(
-            isoString
-        );
+function createTitleFromText(text) {
+    const cleaned = String(text ?? "")
+        .replace(/\s+/g, " ")
+        .trim();
 
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
+    if (!cleaned) return "새 대화";
+
+    return cleaned.length > 28
+        ? `${cleaned.slice(0, 28).trim()}…`
+        : cleaned;
+}
+
+function formatConversationDate(isoString) {
+    const date = new Date(isoString);
+
+    if (Number.isNaN(date.getTime())) {
         return "";
     }
 
-    const now =
-        new Date();
+    const now = new Date();
 
-    const today =
-        new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate()
-        );
+    const today = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate()
+    );
 
-    const target =
-        new Date(
-            date.getFullYear(),
-            date.getMonth(),
-            date.getDate()
-        );
+    const target = new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate()
+    );
 
-    const differenceDays =
-        Math.round(
-            (
-                today.getTime()
-                -
-                target.getTime()
-            )
-            /
-            86400000
-        );
+    const differenceDays = Math.round(
+        (today.getTime() - target.getTime())
+        / 86400000
+    );
 
     if (differenceDays === 0) {
         return `오늘 ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
@@ -600,118 +236,78 @@ function formatConversationDate(isoString) {
 }
 
 function renderMessages() {
-    const conversation =
-        getActiveConversation();
-
-    messagesElement.innerHTML =
-        `
+    messagesElement.innerHTML = `
         <p class="echo-chat-welcome">
             저는 Echo Path의 학습 전용 AI 도우미입니다.
             교과 개념, 문제 풀이, 탐구, 과제, 발표 준비, 공부 방법 등을 질문해 주세요.
         </p>
+    `;
+
+    activeMessages.forEach((item) => {
+        const wrapper = document.createElement("div");
+
+        wrapper.className =
+            `echo-chat-msg ${item.role}`;
+
+        wrapper.innerHTML = `
+            <span class="echo-chat-label">${item.role === "user" ? "나" : "AI"}</span>
+            <div class="echo-chat-bubble">${escapeHtml(item.content)}</div>
         `;
 
-    conversation.messages.forEach(
-        (item) => {
-            const wrapper =
-                document.createElement(
-                    "div"
-                );
-
-            wrapper.className =
-                `echo-chat-msg ${item.role}`;
-
-            wrapper.innerHTML =
-                `
-                <span class="echo-chat-label">${item.role === "user" ? "나" : "AI"}</span>
-                <div class="echo-chat-bubble">${escapeHtml(item.content)}</div>
-                `;
-
-            messagesElement.appendChild(
-                wrapper
-            );
-        }
-    );
+        messagesElement.appendChild(wrapper);
+    });
 
     messagesElement.scrollTop =
         messagesElement.scrollHeight;
 }
 
 function renderHistory() {
-    historyList.innerHTML =
-        "";
+    historyList.innerHTML = "";
 
-    const sorted =
-        [...conversations]
-            .sort(
-                (a, b) =>
-                    new Date(b.updatedAt).getTime()
-                    -
-                    new Date(a.updatedAt).getTime()
-            );
-
-    if (sorted.length === 0) {
+    if (conversations.length === 0) {
         historyList.innerHTML =
             `<p class="echo-chat-history-empty">저장된 대화가 없습니다.</p>`;
-
         return;
     }
 
-    sorted.forEach(
-        (conversation) => {
-            const item =
-                document.createElement(
-                    "div"
-                );
+    conversations.forEach((conversation) => {
+        const item = document.createElement("div");
 
-            item.className =
-                "echo-chat-history-item";
+        item.className =
+            "echo-chat-history-item";
 
-            if (
-                conversation.id
-                ===
-                activeConversationId
-            ) {
-                item.classList.add(
-                    "active"
-                );
-            }
-
-            item.innerHTML =
-                `
-                <button
-                    type="button"
-                    class="echo-chat-history-open"
-                    data-conversation-id="${escapeHtml(conversation.id)}"
-                >
-                    <strong>${escapeHtml(conversation.title || "새 대화")}</strong>
-                    <span>${escapeHtml(formatConversationDate(conversation.updatedAt))}</span>
-                </button>
-
-                <button
-                    type="button"
-                    class="echo-chat-history-delete"
-                    data-delete-conversation-id="${escapeHtml(conversation.id)}"
-                    aria-label="대화 삭제"
-                    title="대화 삭제"
-                >
-                    ×
-                </button>
-                `;
-
-            historyList.appendChild(
-                item
-            );
+        if (conversation.id === activeConversationId) {
+            item.classList.add("active");
         }
-    );
+
+        item.innerHTML = `
+            <button
+                type="button"
+                class="echo-chat-history-open"
+                data-conversation-id="${escapeHtml(conversation.id)}"
+            >
+                <strong>${escapeHtml(conversation.title || "새 대화")}</strong>
+                <span>${escapeHtml(formatConversationDate(conversation.updated_at))}</span>
+            </button>
+
+            <button
+                type="button"
+                class="echo-chat-history-delete"
+                data-delete-conversation-id="${escapeHtml(conversation.id)}"
+                aria-label="대화 삭제"
+                title="대화 삭제"
+            >
+                ×
+            </button>
+        `;
+
+        historyList.appendChild(item);
+    });
 }
 
 function showMainView() {
-    historyView.hidden =
-        true;
-
-    mainView.hidden =
-        false;
+    historyView.hidden = true;
+    mainView.hidden = false;
 
     renderMessages();
 
@@ -722,96 +318,225 @@ function showMainView() {
 }
 
 function showHistoryView() {
-    mainView.hidden =
-        true;
-
-    historyView.hidden =
-        false;
+    mainView.hidden = true;
+    historyView.hidden = false;
 
     renderHistory();
 }
 
 function openChat() {
-    panel.hidden =
-        false;
-
-    launcher.hidden =
-        true;
+    panel.hidden = false;
+    launcher.hidden = true;
 
     showMainView();
 }
 
 function hideChat() {
-    panel.hidden =
-        true;
-
-    launcher.hidden =
-        false;
+    panel.hidden = true;
+    launcher.hidden = false;
 }
 
 function autoResizeInput() {
-    input.style.height =
-        "auto";
+    input.style.height = "auto";
 
     input.style.height =
-        `${Math.min(
-            input.scrollHeight,
-            132
-        )}px`;
+        `${Math.min(input.scrollHeight, 132)}px`;
 }
 
-function startNewConversation() {
-    const current =
-        getActiveConversation();
 
-    /*
-        완전히 비어 있는 새 대화라면 중복으로 또 만들지 않습니다.
-    */
-    if (
-        current.messages.length === 0
-        &&
-        current.title === "새 대화"
-    ) {
-        showMainView();
+/* =========================================================
+   Supabase 대화 저장
+========================================================= */
+
+async function loadConversations() {
+    if (!currentUser) {
+        conversations = [];
+        activeConversationId = null;
+        activeMessages = [];
         return;
     }
 
-    const conversation =
-        createConversation();
+    const {
+        data,
+        error
+    } =
+        await supabase
+            .from("learning_chat_conversations")
+            .select("id,title,created_at,updated_at")
+            .eq("user_id", currentUser.id)
+            .order("updated_at", {
+                ascending: false
+            });
 
-    conversations.unshift(
-        conversation
-    );
+    if (error) {
+        throw error;
+    }
 
-    activeConversationId =
-        conversation.id;
-
-    saveHistory();
-    saveActiveConversationId();
-
-    showMainView();
+    conversations =
+        data ?? [];
 }
 
-function openConversation(conversationId) {
-    const conversation =
-        conversations.find(
+async function createNewConversation({
+    openImmediately = true
+} = {}) {
+    if (!currentUser) {
+        throw new Error("로그인이 필요합니다.");
+    }
+
+    const {
+        data,
+        error
+    } =
+        await supabase
+            .from("learning_chat_conversations")
+            .insert({
+                user_id: currentUser.id,
+                title: "새 대화"
+            })
+            .select("id,title,created_at,updated_at")
+            .single();
+
+    if (error) {
+        throw error;
+    }
+
+    conversations =
+        [
+            data,
+            ...conversations.filter(
+                (item) =>
+                    item.id !== data.id
+            )
+        ];
+
+    activeConversationId =
+        data.id;
+
+    activeMessages =
+        [];
+
+    if (openImmediately) {
+        showMainView();
+    }
+
+    return data;
+}
+
+async function ensureActiveConversation() {
+    if (
+        activeConversationId
+        &&
+        conversations.some(
             (item) =>
-                item.id === conversationId
+                item.id === activeConversationId
+        )
+    ) {
+        return activeConversationId;
+    }
+
+    if (conversations.length > 0) {
+        activeConversationId =
+            conversations[0].id;
+
+        await loadMessages(
+            activeConversationId
         );
 
-    if (!conversation) {
+        return activeConversationId;
+    }
+
+    const conversation =
+        await createNewConversation({
+            openImmediately: false
+        });
+
+    return conversation.id;
+}
+
+async function loadMessages(conversationId) {
+    if (!currentUser || !conversationId) {
+        activeMessages = [];
+        return;
+    }
+
+    isLoadingConversation =
+        true;
+
+    try {
+        const {
+            data,
+            error
+        } =
+            await supabase
+                .from("learning_chat_messages")
+                .select("id,role,content,created_at")
+                .eq(
+                    "conversation_id",
+                    conversationId
+                )
+                .eq(
+                    "user_id",
+                    currentUser.id
+                )
+                .order(
+                    "created_at",
+                    {
+                        ascending: true
+                    }
+                );
+
+        if (error) {
+            throw error;
+        }
+
+        activeMessages =
+            (data ?? []).map(
+                (item) => ({
+                    id: item.id,
+                    role: item.role,
+                    content: item.content,
+                    created_at: item.created_at
+                })
+            );
+    }
+    finally {
+        isLoadingConversation =
+            false;
+    }
+}
+
+async function openConversation(conversationId) {
+    if (
+        isLoadingConversation
+        ||
+        !conversationId
+    ) {
         return;
     }
 
     activeConversationId =
-        conversation.id;
+        conversationId;
 
-    saveActiveConversationId();
+    try {
+        await loadMessages(
+            conversationId
+        );
 
-    showMainView();
+        showMainView();
+    }
+    catch (error) {
+        console.error(
+            "대화 불러오기 실패:",
+            error
+        );
+
+        window.alert(
+            "대화 내용을 불러오지 못했습니다."
+        );
+    }
 }
 
-function deleteConversation(conversationId) {
+async function deleteConversation(conversationId) {
     const target =
         conversations.find(
             (item) =>
@@ -831,6 +556,34 @@ function deleteConversation(conversationId) {
         return;
     }
 
+    const {
+        error
+    } =
+        await supabase
+            .from("learning_chat_conversations")
+            .delete()
+            .eq(
+                "id",
+                conversationId
+            )
+            .eq(
+                "user_id",
+                currentUser.id
+            );
+
+    if (error) {
+        console.error(
+            "대화 삭제 실패:",
+            error
+        );
+
+        window.alert(
+            "대화를 삭제하지 못했습니다."
+        );
+
+        return;
+    }
+
     conversations =
         conversations.filter(
             (item) =>
@@ -843,38 +596,100 @@ function deleteConversation(conversationId) {
         conversationId
     ) {
         activeConversationId =
-            conversations[0]?.id
-            ?? null;
+            null;
+
+        activeMessages =
+            [];
+
+        await ensureActiveConversation();
     }
 
-    if (
-        conversations.length === 0
-    ) {
-        const conversation =
-            createConversation();
-
-        conversations =
-            [conversation];
-
-        activeConversationId =
-            conversation.id;
-    }
-
-    saveHistory();
-    saveActiveConversationId();
     renderHistory();
+}
+
+async function insertMessage({
+    conversationId,
+    role,
+    content
+}) {
+    const {
+        data,
+        error
+    } =
+        await supabase
+            .from("learning_chat_messages")
+            .insert({
+                conversation_id: conversationId,
+                user_id: currentUser.id,
+                role,
+                content
+            })
+            .select("id,role,content,created_at")
+            .single();
+
+    if (error) {
+        throw error;
+    }
+
+    return data;
+}
+
+async function touchConversation(
+    conversationId,
+    title = null
+) {
+    const updates = {
+        updated_at:
+            new Date().toISOString()
+    };
+
+    if (title) {
+        updates.title =
+            title;
+    }
+
+    const {
+        data,
+        error
+    } =
+        await supabase
+            .from("learning_chat_conversations")
+            .update(updates)
+            .eq(
+                "id",
+                conversationId
+            )
+            .eq(
+                "user_id",
+                currentUser.id
+            )
+            .select("id,title,created_at,updated_at")
+            .single();
+
+    if (error) {
+        throw error;
+    }
+
+    conversations =
+        [
+            data,
+            ...conversations.filter(
+                (item) =>
+                    item.id !== data.id
+            )
+        ];
+
+    return data;
 }
 
 
 /* =========================================================
-   Chat request
+   AI 요청
 ========================================================= */
 
 function showTypingIndicator() {
     const wrapper =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     wrapper.className =
         "echo-chat-msg assistant";
@@ -882,13 +697,12 @@ function showTypingIndicator() {
     wrapper.id =
         "echoChatTyping";
 
-    wrapper.innerHTML =
-        `
+    wrapper.innerHTML = `
         <span class="echo-chat-label">AI</span>
         <div class="echo-chat-bubble echo-chat-typing">
             답변을 생각하고 있습니다...
         </div>
-        `;
+    `;
 
     messagesElement.appendChild(
         wrapper
@@ -906,20 +720,17 @@ function removeTypingIndicator() {
 
 function showErrorMessage(message) {
     const wrapper =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     wrapper.className =
         "echo-chat-msg assistant";
 
-    wrapper.innerHTML =
-        `
+    wrapper.innerHTML = `
         <span class="echo-chat-label">AI</span>
         <div class="echo-chat-bubble echo-chat-error">
             ${escapeHtml(message)}
         </div>
-        `;
+    `;
 
     messagesElement.appendChild(
         wrapper
@@ -940,12 +751,11 @@ async function sendMessage() {
         !content
         ||
         isSending
+        ||
+        !currentUser
     ) {
         return;
     }
-
-    const conversation =
-        getActiveConversation();
 
     isSending =
         true;
@@ -953,35 +763,61 @@ async function sendMessage() {
     sendButton.disabled =
         true;
 
-    conversation.messages.push({
-        role: "user",
-        content
-    });
+    try {
+        await ensureActiveConversation();
 
-    conversation.messages =
-        conversation.messages.slice(
-            -MAX_MESSAGES_PER_CONVERSATION
+        const isFirstUserMessage =
+            !activeMessages.some(
+                (item) =>
+                    item.role === "user"
+            );
+
+        const savedUserMessage =
+            await insertMessage({
+                conversationId:
+                    activeConversationId,
+                role:
+                    "user",
+                content
+            });
+
+        activeMessages.push({
+            id:
+                savedUserMessage.id,
+            role:
+                savedUserMessage.role,
+            content:
+                savedUserMessage.content,
+            created_at:
+                savedUserMessage.created_at
+        });
+
+        const title =
+            isFirstUserMessage
+                ? createTitleFromText(
+                    content
+                )
+                : null;
+
+        await touchConversation(
+            activeConversationId,
+            title
         );
 
-    updateConversationMetadata(
-        conversation
-    );
+        input.value =
+            "";
 
-    saveHistory();
+        autoResizeInput();
+        renderMessages();
+        showTypingIndicator();
 
-    input.value =
-        "";
-
-    autoResizeInput();
-    renderMessages();
-    showTypingIndicator();
-
-    try {
         const payloadMessages =
-            conversation.messages.map(
+            activeMessages.map(
                 (item) => ({
-                    role: item.role,
-                    content: item.content
+                    role:
+                        item.role,
+                    content:
+                        item.content
                 })
             );
 
@@ -989,15 +825,17 @@ async function sendMessage() {
             data,
             error
         } =
-            await supabase.functions.invoke(
-                FUNCTION_NAME,
-                {
-                    body: {
-                        messages:
-                            payloadMessages
+            await supabase
+                .functions
+                .invoke(
+                    FUNCTION_NAME,
+                    {
+                        body: {
+                            messages:
+                                payloadMessages
+                        }
                     }
-                }
-            );
+                );
 
         if (error) {
             throw error;
@@ -1015,21 +853,30 @@ async function sendMessage() {
             );
         }
 
-        conversation.messages.push({
-            role: "assistant",
-            content: reply
+        const savedAssistantMessage =
+            await insertMessage({
+                conversationId:
+                    activeConversationId,
+                role:
+                    "assistant",
+                content:
+                    reply
+            });
+
+        activeMessages.push({
+            id:
+                savedAssistantMessage.id,
+            role:
+                savedAssistantMessage.role,
+            content:
+                savedAssistantMessage.content,
+            created_at:
+                savedAssistantMessage.created_at
         });
 
-        conversation.messages =
-            conversation.messages.slice(
-                -MAX_MESSAGES_PER_CONVERSATION
-            );
-
-        updateConversationMetadata(
-            conversation
+        await touchConversation(
+            activeConversationId
         );
-
-        saveHistory();
 
         removeTypingIndicator();
         renderMessages();
@@ -1059,7 +906,7 @@ async function sendMessage() {
 
 
 /* =========================================================
-   Events
+   이벤트
 ========================================================= */
 
 form.addEventListener(
@@ -1098,12 +945,45 @@ hideButton.addEventListener(
 
 newButton.addEventListener(
     "click",
-    startNewConversation
+    async () => {
+        if (!currentUser || isSending) {
+            return;
+        }
+
+        try {
+            await createNewConversation();
+        }
+        catch (error) {
+            console.error(
+                "새 대화 생성 실패:",
+                error
+            );
+
+            window.alert(
+                "새 대화를 만들지 못했습니다."
+            );
+        }
+    }
 );
 
 historyButton.addEventListener(
     "click",
-    showHistoryView
+    async () => {
+        try {
+            await loadConversations();
+            showHistoryView();
+        }
+        catch (error) {
+            console.error(
+                "대화목록 불러오기 실패:",
+                error
+            );
+
+            window.alert(
+                "대화목록을 불러오지 못했습니다."
+            );
+        }
+    }
 );
 
 historyCloseButton.addEventListener(
@@ -1120,7 +1000,7 @@ historyList.addEventListener(
             );
 
         if (openButton) {
-            openConversation(
+            void openConversation(
                 openButton.dataset.conversationId
             );
 
@@ -1133,7 +1013,7 @@ historyList.addEventListener(
             );
 
         if (deleteButton) {
-            deleteConversation(
+            void deleteConversation(
                 deleteButton.dataset.deleteConversationId
             );
         }
@@ -1142,7 +1022,7 @@ historyList.addEventListener(
 
 
 /* =========================================================
-   Floating launcher drag
+   플로팅 아이콘 위치
 ========================================================= */
 
 function clamp(value, min, max) {
@@ -1163,17 +1043,14 @@ function saveLauncherPosition() {
         localStorage.setItem(
             POSITION_STORAGE_KEY,
             JSON.stringify({
-                left: rect.left,
-                top: rect.top
+                left:
+                    rect.left,
+                top:
+                    rect.top
             })
         );
     }
-    catch (error) {
-        console.warn(
-            "AI 아이콘 위치 저장 실패:",
-            error
-        );
-    }
+    catch {}
 }
 
 function restoreLauncherPosition() {
@@ -1192,14 +1069,20 @@ function restoreLauncherPosition() {
                 raw
             );
 
+        const left =
+            Number(
+                position?.left
+            );
+
+        const top =
+            Number(
+                position?.top
+            );
+
         if (
-            !Number.isFinite(
-                Number(position?.left)
-            )
+            !Number.isFinite(left)
             ||
-            !Number.isFinite(
-                Number(position?.top)
-            )
+            !Number.isFinite(top)
         ) {
             return;
         }
@@ -1220,7 +1103,7 @@ function restoreLauncherPosition() {
 
         launcher.style.left =
             `${clamp(
-                Number(position.left),
+                left,
                 8,
                 Math.max(
                     8,
@@ -1234,7 +1117,7 @@ function restoreLauncherPosition() {
 
         launcher.style.top =
             `${clamp(
-                Number(position.top),
+                top,
                 8,
                 Math.max(
                     8,
@@ -1246,12 +1129,7 @@ function restoreLauncherPosition() {
                 )
             )}px`;
     }
-    catch (error) {
-        console.warn(
-            "AI 아이콘 위치 복원 실패:",
-            error
-        );
-    }
+    catch {}
 }
 
 launcher.addEventListener(
@@ -1401,55 +1279,67 @@ window.addEventListener(
 
 
 /* =========================================================
-   Auth / initialization
+   로그인 사용자 초기화
 ========================================================= */
 
-async function initializeUserConversation() {
-    try {
-        const {
-            data
-        } =
-            await supabase.auth.getSession();
+async function initializeForSession(session) {
+    currentUser =
+        session?.user
+        ?? null;
 
-        currentUserId =
-            data?.session?.user?.id
-            ||
-            "guest";
+    conversations =
+        [];
+
+    activeConversationId =
+        null;
+
+    activeMessages =
+        [];
+
+    if (!currentUser) {
+        renderMessages();
+        hideChat();
+        return;
+    }
+
+    try {
+        await loadConversations();
+
+        await ensureActiveConversation();
+
+        if (activeConversationId) {
+            await loadMessages(
+                activeConversationId
+            );
+        }
+
+        renderMessages();
+        restoreLauncherPosition();
     }
     catch (error) {
-        console.warn(
-            "AI 학습 도우미 사용자 확인 실패:",
+        console.error(
+            "AI 학습 도우미 초기화 실패:",
             error
         );
-
-        currentUserId =
-            "guest";
     }
-
-    loadHistory();
-    loadActiveConversationId();
-    migrateLegacyConversationIfNeeded();
-    ensureActiveConversation();
-
-    renderMessages();
-    restoreLauncherPosition();
 }
+
+
+const {
+    data: sessionData
+} =
+    await supabase.auth.getSession();
+
+await initializeForSession(
+    sessionData?.session
+    ?? null
+);
+
 
 supabase.auth.onAuthStateChange(
     (_event, session) => {
-        currentUserId =
-            session?.user?.id
-            ||
-            "guest";
-
-        loadHistory();
-        loadActiveConversationId();
-        migrateLegacyConversationIfNeeded();
-        ensureActiveConversation();
-
-        renderMessages();
-        hideChat();
+        void initializeForSession(
+            session
+        );
     }
 );
-
-void initializeUserConversation();
