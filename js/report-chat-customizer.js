@@ -9,7 +9,7 @@
 
 import { supabase } from "./supabase.js";
 
-const FUNCTION_NAME = "learning-chat";
+const CUSTOM_TABLE = "ai_analysis_custom";
 const CUSTOM_IDS = {
     core: "#reportCoreAnalysis",
     meta: "#reportAiAnalysisMeta",
@@ -25,6 +25,7 @@ let applying = false;
 let reportObserver = null;
 let chatObserver = null;
 let refreshTimer = null;
+let refinementMode = false;
 
 function safeText(value) {
     return String(value ?? "").trim();
@@ -91,30 +92,26 @@ function openChatForRefinement() {
         return;
     }
 
+    refinementMode = true;
+
     panel.hidden = false;
     if (launcher) launcher.hidden = true;
     if (mainView) mainView.hidden = false;
     if (historyView) historyView.hidden = true;
 
-    const currentSummary =
-        safeText(document.querySelector(CUSTOM_IDS.core)?.textContent);
+    /*
+       중요: 사용자가 직접 질문하도록 입력창을 비워 둡니다.
+       v2에서 자동으로 넣었던 안내 문구가 남아 있는 경우에만 제거합니다.
+       사용자가 직접 작성 중인 다른 문장은 지우지 않습니다.
+    */
+    const oldInjectedPrefix = "오늘의 AI 분석 결과가 나에게 잘 맞는지 함께 다시 분석해줘.";
+    if (String(input.value ?? "").trim().startsWith(oldInjectedPrefix)) {
+        input.value = "";
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+    }
 
-    const prompt = [
-        "오늘의 AI 분석 결과가 나에게 잘 맞는지 함께 다시 분석해줘.",
-        "내 Echo Path의 실제 T/N/C/R·DDI·앱 사용 데이터를 바탕으로 판단하되,",
-        "데이터만으로 알 수 없는 부분은 내 상황을 질문하면서 맞춰줘.",
-        "대화를 통해 나에게 더 적합한 학습 방향과 실행 방법을 찾아보자.",
-        currentSummary
-            ? `현재 리포트의 핵심 분석은 다음과 같아: ${currentSummary}`
-            : ""
-    ].filter(Boolean).join("\n");
-
-    input.value = prompt;
-    input.dispatchEvent(new Event("input", { bubbles: true }));
     input.focus();
-    input.setSelectionRange(input.value.length, input.value.length);
 }
-
 function ensureReportControl() {
     const card = document.querySelector(".report-ai-detail-card");
     if (!card || document.querySelector("#echoCustomReportControl")) return;
@@ -214,9 +211,9 @@ function collectCurrentConversationMessages() {
 }
 
 async function saveAssistantReply(button, text) {
-    if (!text) return;
+    if (!text || !currentUserId) return;
 
-    if (!confirm("이 챗봇 답변을 바탕으로 오늘의 AI 분석을 맞춤 분석으로 다시 작성할까요?\n\nT/N/C/R·DDI 원본 수치는 변경되지 않습니다.")) {
+    if (!confirm("이 챗봇 답변을 오늘의 AI 분석에 반영할까요?\n\nT/N/C/R·DDI 원본 수치는 변경되지 않습니다.")) {
         return;
     }
 
@@ -225,37 +222,63 @@ async function saveAssistantReply(button, text) {
     button.textContent = "반영 중...";
 
     try {
-        const { data, error } = await supabase.functions.invoke(
-            FUNCTION_NAME,
-            {
-                body: {
-                    action: "save_custom_analysis",
-                    source_text: text,
-                    messages: collectCurrentConversationMessages()
-                }
-            }
-        );
+        const analysisDate = new Intl.DateTimeFormat(
+            "en-CA",
+            { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }
+        ).format(new Date());
+
+        /*
+           추가 Gemini 호출을 하지 않습니다.
+           이미 챗봇이 사용자와 대화해 만든 최종 답변을 맞춤 핵심 분석으로 저장합니다.
+           나머지 리포트 항목은 현재 자동 분석 결과를 그대로 보존합니다.
+        */
+        const habitPattern =
+            safeText(document.querySelector(CUSTOM_IDS.patternDescription)?.textContent)
+            || text;
+
+        const learningDirection =
+            safeText(document.querySelector(CUSTOM_IDS.learning)?.textContent)
+            || text;
+
+        const solutionSuggestions =
+            safeText(document.querySelector(CUSTOM_IDS.solution)?.textContent)
+            || text;
+
+        const payload = {
+            user_id: currentUserId,
+            analysis_date: analysisDate,
+            source_chat_text: text,
+            summary: text,
+            habit_pattern: habitPattern,
+            learning_direction: learningDirection,
+            solution_suggestions: solutionSuggestions,
+            updated_at: new Date().toISOString()
+        };
+
+        const { data, error } = await supabase
+            .from(CUSTOM_TABLE)
+            .upsert(payload, { onConflict: "user_id,analysis_date" })
+            .select("id,analysis_date,summary,habit_pattern,learning_direction,solution_suggestions,source_chat_text,created_at,updated_at")
+            .single();
 
         if (error) throw error;
-        if (data?.success !== true || !data?.customAnalysis) {
-            throw new Error(data?.error || "맞춤 분석 저장에 실패했습니다.");
-        }
+        if (!data) throw new Error("맞춤 분석 저장 결과를 확인하지 못했습니다.");
 
-        customAnalysis = data.customAnalysis;
+        customAnalysis = data;
         ensureReportControl();
         applyCustomToReport();
         syncControlState();
-        setStatus("챗봇 대화를 반영한 맞춤 분석을 오늘의 AI 분석에 적용했습니다.", "success");
+        setStatus("선택한 챗봇 답변을 오늘의 AI 분석에 반영했습니다.", "success");
 
         button.textContent = "오늘의 AI 분석에 반영됨";
     } catch (error) {
         console.error("Echo Path 맞춤 분석 저장 실패:", error);
-        alert(error?.message || "맞춤 분석 저장에 실패했습니다.");
+        const message = error?.message || "맞춤 분석 저장에 실패했습니다.";
+        alert(`맞춤 분석 저장에 실패했습니다.\n\n${message}`);
         button.disabled = false;
         button.textContent = original;
     }
 }
-
 function decorateAssistantMessages() {
     const wrappers = [
         ...document.querySelectorAll("#echoChatMessages .echo-chat-msg")
@@ -277,7 +300,7 @@ function decorateAssistantMessages() {
         if (!wrapper.classList.contains("assistant")) return;
         if (wrapper.querySelector(".echo-chat-typing, .echo-chat-error")) return;
         if (wrapper.querySelector(".echo-custom-apply")) return;
-        if (!isRelevantPersonalAnalysis(lastUserText, text)) return;
+        if (!refinementMode && !isRelevantPersonalAnalysis(lastUserText, text)) return;
 
         const button = document.createElement("button");
         button.type = "button";
@@ -300,14 +323,21 @@ async function loadCustomAnalysis() {
     }
 
     try {
-        const { data, error } = await supabase.functions.invoke(
-            FUNCTION_NAME,
-            { body: { action: "get_custom_analysis" } }
-        );
+        const analysisDate = new Intl.DateTimeFormat(
+            "en-CA",
+            { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }
+        ).format(new Date());
+
+        const { data, error } = await supabase
+            .from(CUSTOM_TABLE)
+            .select("id,analysis_date,summary,habit_pattern,learning_direction,solution_suggestions,source_chat_text,created_at,updated_at")
+            .eq("user_id", currentUserId)
+            .eq("analysis_date", analysisDate)
+            .maybeSingle();
 
         if (error) throw error;
 
-        customAnalysis = data?.customAnalysis ?? null;
+        customAnalysis = data ?? null;
         ensureReportControl();
         syncControlState();
         applyCustomToReport();
@@ -316,13 +346,12 @@ async function loadCustomAnalysis() {
             setStatus("오늘은 챗봇 대화를 반영한 맞춤 분석이 표시되고 있습니다.", "success");
         }
     } catch (error) {
-        // 새 테이블/Edge Function 배포 전에도 기존 Echo Path는 계속 동작해야 함.
+        // 맞춤 분석 테이블 문제로 기존 Echo Path가 멈추지 않도록 실패를 격리합니다.
         console.warn("Echo Path 맞춤 분석 불러오기 대기:", error?.message || error);
     }
 }
-
 async function resetCustomAnalysis() {
-    if (!customAnalysis) return;
+    if (!customAnalysis || !currentUserId) return;
 
     if (!confirm("오늘의 맞춤 분석을 해제하고 기존 자동 AI 분석으로 되돌릴까요?\n\n원래 자동 분석 데이터는 삭제되지 않습니다.")) {
         return;
@@ -331,15 +360,18 @@ async function resetCustomAnalysis() {
     setStatus("자동 분석으로 되돌리는 중...");
 
     try {
-        const { data, error } = await supabase.functions.invoke(
-            FUNCTION_NAME,
-            { body: { action: "reset_custom_analysis" } }
-        );
+        const analysisDate = new Intl.DateTimeFormat(
+            "en-CA",
+            { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }
+        ).format(new Date());
+
+        const { error } = await supabase
+            .from(CUSTOM_TABLE)
+            .delete()
+            .eq("user_id", currentUserId)
+            .eq("analysis_date", analysisDate);
 
         if (error) throw error;
-        if (data?.success !== true) {
-            throw new Error(data?.error || "맞춤 분석 해제에 실패했습니다.");
-        }
 
         customAnalysis = null;
         syncControlState();
@@ -352,7 +384,6 @@ async function resetCustomAnalysis() {
         setStatus(error?.message || "맞춤 분석 해제에 실패했습니다.", "error");
     }
 }
-
 function scheduleApply() {
     if (refreshTimer) window.clearTimeout(refreshTimer);
 
